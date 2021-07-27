@@ -156,7 +156,7 @@ public abstract class BaseTracer {
    * @see #shouldStartSpan(Context, SpanKind)
    */
   protected final Context withClientSpan(Context parentContext, Span span) {
-    return ClientSpan.with(parentContext.with(span), span);
+    return ClientSpan.with(parentContext.with(span), span, InstrumentationType.NONE_TYPE);
   }
 
   /**
