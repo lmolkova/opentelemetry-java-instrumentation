@@ -48,7 +48,7 @@ public abstract class HttpServerTracer<REQUEST, RESPONSE, CONNECTION, STORAGE> e
   }
 
   @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP_TYPE;}
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP;}
 
   public Context startSpan(REQUEST request, CONNECTION connection, STORAGE storage, Method origin) {
     String spanName = SpanNames.fromMethod(origin);

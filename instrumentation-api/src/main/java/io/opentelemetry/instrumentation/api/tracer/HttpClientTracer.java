@@ -45,7 +45,7 @@ public abstract class HttpClientTracer<REQUEST, CARRIER, RESPONSE> extends BaseT
   }
 
   @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP_TYPE;}
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP;}
 
   protected abstract String method(REQUEST request);
 

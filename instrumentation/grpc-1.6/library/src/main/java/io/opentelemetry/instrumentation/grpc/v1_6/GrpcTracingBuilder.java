@@ -56,7 +56,7 @@ public final class GrpcTracingBuilder {
   /** Returns a new {@link GrpcTracing} with the settings of this {@link GrpcTracingBuilder}. */
   public GrpcTracing build() {
     InstrumenterBuilder<GrpcRequest, Status> instrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.RPC_TYPE, new GrpcSpanNameExtractor());
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.RPC, new GrpcSpanNameExtractor());
     instrumenterBuilder
         .setSpanStatusExtractor(new GrpcSpanStatusExtractor())
         .addAttributesExtractors(
