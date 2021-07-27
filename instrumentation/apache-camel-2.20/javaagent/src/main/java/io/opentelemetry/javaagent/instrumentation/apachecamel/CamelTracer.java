@@ -27,7 +27,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.javaagent.instrumentation.apachecamel.decorators.DecoratorRegistry;
 import org.apache.camel.Endpoint;
 import org.apache.camel.util.StringHelper;
