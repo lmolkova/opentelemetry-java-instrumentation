@@ -73,9 +73,9 @@ public final class ArmeriaTracingBuilder {
         statusExtractorTransformer.apply(HttpSpanStatusExtractor.create(httpAttributesExtractor));
 
     InstrumenterBuilder<ClientRequestContext, RequestLog> clientInstrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.HTTP_TYPE, spanNameExtractor);
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.HTTP, spanNameExtractor);
     InstrumenterBuilder<ServiceRequestContext, RequestLog> serverInstrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.HTTP_TYPE, spanNameExtractor);
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.HTTP, spanNameExtractor);
 
     Stream.of(clientInstrumenterBuilder, serverInstrumenterBuilder)
         .forEach(

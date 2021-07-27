@@ -38,7 +38,7 @@ public abstract class DatabaseClientTracer<CONNECTION, STATEMENT, SANITIZEDSTATE
   }
 
   @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.DB_TYPE;}
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.DB;}
 
   public boolean shouldStartSpan(Context parentContext) {
     return shouldStartSpan(parentContext, CLIENT);

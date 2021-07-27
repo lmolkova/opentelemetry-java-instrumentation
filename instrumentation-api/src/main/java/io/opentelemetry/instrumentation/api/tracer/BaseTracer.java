@@ -82,7 +82,7 @@ public abstract class BaseTracer {
   protected abstract String getInstrumentationName();
 
   protected InstrumentationType getInstrumentationType() {
-    return InstrumentationType.NONE_TYPE;
+    return InstrumentationType.NONE;
   }
 
   /**

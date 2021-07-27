@@ -24,12 +24,12 @@ public final class ClientSpan {
       ContextKey.named("opentelemetry-traces-client-span-key");
 
   private static final Map<Integer, ContextKey<Span>> instrumentationKeys = new HashMap<>();
+
   static {
-    instrumentationKeys.put(InstrumentationType.NONE, ContextKey.named("opentelemetry-traces-client-span-key-" + InstrumentationType.NONE));
-    instrumentationKeys.put(InstrumentationType.HTTP, ContextKey.named("opentelemetry-traces-client-span-key-" + InstrumentationType.HTTP));
-    instrumentationKeys.put(InstrumentationType.DB, ContextKey.named("opentelemetry-traces-client-span-key-" + InstrumentationType.DB));
-    instrumentationKeys.put(InstrumentationType.RPC, ContextKey.named("opentelemetry-traces-client-span-key-" + InstrumentationType.RPC));
-    instrumentationKeys.put(InstrumentationType.MESSAGING, ContextKey.named("opentelemetry-traces-client-span-key-" + InstrumentationType.MESSAGING));
+    instrumentationKeys.put(InstrumentationType.HTTP.getValue(), createTypedKey(InstrumentationType.HTTP));
+    instrumentationKeys.put(InstrumentationType.DB.getValue(), createTypedKey(InstrumentationType.DB));
+    instrumentationKeys.put(InstrumentationType.RPC.getValue(), createTypedKey(InstrumentationType.RPC));
+    instrumentationKeys.put(InstrumentationType.MESSAGING.getValue(), createTypedKey(InstrumentationType.MESSAGING));
   }
 
   /** Returns true when a {@link SpanKind#CLIENT} span is present in the passed {@code context}. */
@@ -38,9 +38,8 @@ public final class ClientSpan {
   }
 
   public static boolean exists(Context context, InstrumentationType instrumentationType) {
-    if (instrumentationType == InstrumentationType.NONE_TYPE) {
-      // we want to allow nested layers of generic instrumentation
-      // as it's likely to come from users
+    if (instrumentationType.isNone()) {
+      // we allow nested layers of generic instrumentation as it's likely to come from users
       return false;
     }
 
@@ -63,7 +62,7 @@ public final class ClientSpan {
 
    public static Context with(Context context, Span clientSpan, InstrumentationType instrumentationType) {
 
-    if (instrumentationType != InstrumentationType.NONE_TYPE) {
+    if (!instrumentationType.isNone()) {
       ContextKey<Span> typedKey = instrumentationKeys.get(instrumentationType.getValue());
       if (typedKey == null) {
         typedKey = ContextKey
@@ -78,4 +77,8 @@ public final class ClientSpan {
   }
 
   private ClientSpan() {}
+
+  private static ContextKey<Span> createTypedKey(InstrumentationType type) {
+    return ContextKey.named("opentelemetry-traces-client-span-key-" + type.getValue());
+  }
 }
