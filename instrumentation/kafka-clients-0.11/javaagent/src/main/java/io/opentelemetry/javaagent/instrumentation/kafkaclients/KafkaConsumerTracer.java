@@ -11,6 +11,7 @@ import static io.opentelemetry.javaagent.instrumentation.kafkaclients.TextMapExt
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -80,4 +81,7 @@ public class KafkaConsumerTracer extends BaseTracer {
   protected String getInstrumentationName() {
     return "io.opentelemetry.kafka-clients-0.11";
   }
+
+  @Override
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING_TYPE;}
 }

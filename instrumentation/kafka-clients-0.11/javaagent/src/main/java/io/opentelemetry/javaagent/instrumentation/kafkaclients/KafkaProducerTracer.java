@@ -10,6 +10,7 @@ import static io.opentelemetry.api.trace.SpanKind.PRODUCER;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.apache.kafka.clients.ApiVersions;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -62,4 +63,7 @@ public class KafkaProducerTracer extends BaseTracer {
   protected String getInstrumentationName() {
     return "io.opentelemetry.kafka-clients-0.11";
   }
+
+  @Override
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING_TYPE;}
 }

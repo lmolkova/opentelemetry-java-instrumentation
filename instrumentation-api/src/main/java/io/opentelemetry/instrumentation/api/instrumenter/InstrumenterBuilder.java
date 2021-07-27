@@ -49,6 +49,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
       String instrumentationName,
+      InstrumentationType instrumentationType,
       SpanNameExtractor<? super REQUEST> spanNameExtractor) {
     this.openTelemetry = openTelemetry;
     // TODO(anuraaga): Retrieve from openTelemetry when not alpha anymore.

@@ -81,6 +81,10 @@ public abstract class BaseTracer {
    */
   protected abstract String getInstrumentationName();
 
+  protected InstrumentationType getInstrumentationType() {
+    return InstrumentationType.NONE_TYPE;
+  }
+
   /**
    * The version of the instrumentation library - defaults to the value of JAR manifest attribute
    * {@code Implementation-Version}.
@@ -156,7 +160,7 @@ public abstract class BaseTracer {
    * @see #shouldStartSpan(Context, SpanKind)
    */
   protected final Context withClientSpan(Context parentContext, Span span) {
-    return ClientSpan.with(parentContext.with(span), span, InstrumentationType.NONE_TYPE);
+    return ClientSpan.with(parentContext.with(span), span, getInstrumentationType());
   }
 
   /**
