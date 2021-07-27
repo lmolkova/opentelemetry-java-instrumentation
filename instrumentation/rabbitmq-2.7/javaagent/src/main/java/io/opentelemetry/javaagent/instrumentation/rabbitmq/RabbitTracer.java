@@ -21,6 +21,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.api.tracer.net.NetPeerAttributes;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import java.util.Map;
@@ -186,4 +187,7 @@ public class RabbitTracer extends BaseTracer {
   protected String getInstrumentationName() {
     return "io.opentelemetry.rabbitmq-2.7";
   }
+
+  @Override
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING_TYPE;}
 }

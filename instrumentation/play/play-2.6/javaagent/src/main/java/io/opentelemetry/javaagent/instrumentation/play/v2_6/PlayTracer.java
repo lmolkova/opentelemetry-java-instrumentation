@@ -9,6 +9,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import play.api.mvc.Request;
 import play.api.routing.HandlerDef;

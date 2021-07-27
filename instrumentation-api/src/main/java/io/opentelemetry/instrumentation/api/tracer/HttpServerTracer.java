@@ -47,6 +47,9 @@ public abstract class HttpServerTracer<REQUEST, RESPONSE, CONNECTION, STORAGE> e
     super(openTelemetry);
   }
 
+  @Override
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP_TYPE;}
+
   public Context startSpan(REQUEST request, CONNECTION connection, STORAGE storage, Method origin) {
     String spanName = SpanNames.fromMethod(origin);
     return startSpan(request, connection, storage, spanName);

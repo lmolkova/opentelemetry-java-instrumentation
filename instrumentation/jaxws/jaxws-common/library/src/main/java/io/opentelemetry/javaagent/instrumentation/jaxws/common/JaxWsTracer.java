@@ -10,6 +10,7 @@ import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
 import io.opentelemetry.instrumentation.api.tracer.SpanNames;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
