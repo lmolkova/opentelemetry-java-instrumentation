@@ -17,6 +17,7 @@ import io.opentelemetry.instrumentation.api.InstrumentationVersion;
 import io.opentelemetry.instrumentation.api.internal.SupportabilityMetrics;
 import io.opentelemetry.instrumentation.api.tracer.ClientSpan;
 import io.opentelemetry.instrumentation.api.tracer.ConsumerSpan;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,13 +59,18 @@ public class Instrumenter<REQUEST, RESPONSE> {
   public static <REQUEST, RESPONSE> InstrumenterBuilder<REQUEST, RESPONSE> newBuilder(
       OpenTelemetry openTelemetry,
       String instrumentationName,
+      InstrumentationType instrumentationType,
       SpanNameExtractor<? super REQUEST> spanNameExtractor) {
-    return new InstrumenterBuilder<>(openTelemetry, instrumentationName, spanNameExtractor);
+    return new InstrumenterBuilder<>(openTelemetry, instrumentationName, instrumentationType, spanNameExtractor);
   }
 
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
 
   private final String instrumentationName;
+  // TODO we should be able to figure it out from the schema_url?
+  // but then we'd have multiple versions with different urls
+  // and we want to suppress multiple versions of the same instrumentation
+  private final InstrumentationType instrumentationType;
   private final Tracer tracer;
   private final SpanNameExtractor<? super REQUEST> spanNameExtractor;
   private final SpanKindExtractor<? super REQUEST> spanKindExtractor;
@@ -74,11 +80,13 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private final List<? extends SpanLinkExtractor<? super REQUEST>> spanLinkExtractors;
   private final List<? extends RequestListener> requestListeners;
   private final ErrorCauseExtractor errorCauseExtractor;
+
   @Nullable private final StartTimeExtractor<REQUEST> startTimeExtractor;
   @Nullable private final EndTimeExtractor<RESPONSE> endTimeExtractor;
 
   Instrumenter(InstrumenterBuilder<REQUEST, RESPONSE> builder) {
     this.instrumentationName = builder.instrumentationName;
+    this.instrumentationType = builder.instrumentationType;
     this.tracer =
         builder.openTelemetry.getTracer(instrumentationName, InstrumentationVersion.VERSION);
     this.spanNameExtractor = builder.spanNameExtractor;
@@ -107,7 +115,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
         suppressed = ServerSpan.exists(parentContext) || ConsumerSpan.exists(parentContext);
         break;
       case CLIENT:
-        suppressed = ClientSpan.exists(parentContext);
+        suppressed = ClientSpan.exists(parentContext, instrumentationType);
         break;
       default:
         break;
@@ -160,7 +168,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
       case SERVER:
         return ServerSpan.with(context, span);
       case CLIENT:
-        return ClientSpan.with(context, span);
+        return ClientSpan.with(context, span, instrumentationType);
       case CONSUMER:
         return ConsumerSpan.with(context, span);
       default:

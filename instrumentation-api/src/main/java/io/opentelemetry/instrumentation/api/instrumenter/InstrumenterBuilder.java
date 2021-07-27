@@ -17,6 +17,7 @@ import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -29,6 +30,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   final OpenTelemetry openTelemetry;
   final Meter meter;
   final String instrumentationName;
+  final InstrumentationType instrumentationType;
   final SpanNameExtractor<? super REQUEST> spanNameExtractor;
 
   final List<AttributesExtractor<? super REQUEST, ? super RESPONSE>> attributesExtractors =
@@ -40,6 +42,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   SpanStatusExtractor<? super REQUEST, ? super RESPONSE> spanStatusExtractor =
       SpanStatusExtractor.getDefault();
   ErrorCauseExtractor errorCauseExtractor = ErrorCauseExtractor.jdk();
+
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
 
@@ -51,6 +54,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     // TODO(anuraaga): Retrieve from openTelemetry when not alpha anymore.
     this.meter = GlobalMeterProvider.get().get(instrumentationName);
     this.instrumentationName = instrumentationName;
+    this.instrumentationType = instrumentationType;
     this.spanNameExtractor = spanNameExtractor;
   }
 

@@ -11,6 +11,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.grpc.v1_6.internal.GrpcNetAttributesExtractor;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public final class GrpcTracingBuilder {
   /** Returns a new {@link GrpcTracing} with the settings of this {@link GrpcTracingBuilder}. */
   public GrpcTracing build() {
     InstrumenterBuilder<GrpcRequest, Status> instrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, new GrpcSpanNameExtractor());
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.RPC_TYPE, new GrpcSpanNameExtractor());
     instrumenterBuilder
         .setSpanStatusExtractor(new GrpcSpanStatusExtractor())
         .addAttributesExtractors(
