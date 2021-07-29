@@ -9,6 +9,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.api.tracer.SpanNames;
 import java.lang.reflect.Method;
 
@@ -22,7 +23,7 @@ public final class MethodSingletons {
 
     INSTRUMENTER =
         Instrumenter.<Method, Void>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanName)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.NONE, spanName)
             .newInstrumenter(SpanKindExtractor.alwaysInternal());
   }
 

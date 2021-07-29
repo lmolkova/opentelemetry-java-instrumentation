@@ -12,6 +12,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 
 public final class CassandraSingletons {
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.cassandra-4.0";
@@ -26,7 +27,7 @@ public final class CassandraSingletons {
 
     INSTRUMENTER =
         Instrumenter.<CassandraRequest, ExecutionInfo>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanName)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.DB, spanName)
             .addAttributesExtractor(attributesExtractor)
             .addAttributesExtractor(new CassandraNetAttributesExtractor())
             .addAttributesExtractor(new CassandraAttributesExtractor())

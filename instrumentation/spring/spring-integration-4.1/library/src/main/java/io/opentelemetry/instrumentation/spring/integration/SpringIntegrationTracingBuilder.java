@@ -8,6 +8,7 @@ package io.opentelemetry.instrumentation.spring.integration;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public final class SpringIntegrationTracingBuilder {
   public SpringIntegrationTracing build() {
     Instrumenter<MessageWithChannel, Void> instrumenter =
         Instrumenter.<MessageWithChannel, Void>newBuilder(
-                openTelemetry, INSTRUMENTATION_NAME, new MessageChannelSpanNameExtractor())
+                openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.NONE, new MessageChannelSpanNameExtractor())
             .addAttributesExtractors(additionalAttributeExtractors)
             .newConsumerInstrumenter(MessageHeadersGetter.INSTANCE);
     return new SpringIntegrationTracing(openTelemetry.getPropagators(), instrumenter);

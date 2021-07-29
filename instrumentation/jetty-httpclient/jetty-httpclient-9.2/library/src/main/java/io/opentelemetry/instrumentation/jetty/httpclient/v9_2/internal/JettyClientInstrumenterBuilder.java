@@ -16,6 +16,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtrac
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import java.util.ArrayList;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
@@ -50,7 +51,7 @@ public final class JettyClientInstrumenterBuilder {
 
     Instrumenter<Request, Response> instrumenter =
         Instrumenter.<Request, Response>newBuilder(
-                this.openTelemetry, INSTRUMENTATION_NAME, spanNameExtractor)
+                this.openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.HTTP, spanNameExtractor)
             .setSpanStatusExtractor(spanStatusExtractor)
             .addAttributesExtractor(httpAttributesExtractor)
             .addAttributesExtractor(netAttributesExtractor)

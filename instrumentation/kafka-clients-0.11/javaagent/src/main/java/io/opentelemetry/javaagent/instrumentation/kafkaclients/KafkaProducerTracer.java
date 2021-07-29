@@ -65,5 +65,5 @@ public class KafkaProducerTracer extends BaseTracer {
   }
 
   @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING_TYPE;}
+  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING;}
 }
