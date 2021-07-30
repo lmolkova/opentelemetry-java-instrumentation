@@ -66,7 +66,6 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
 
   private final String instrumentationName;
-
   private final Tracer tracer;
   private final SpanNameExtractor<? super REQUEST> spanNameExtractor;
   private final SpanKindExtractor<? super REQUEST> spanKindExtractor;

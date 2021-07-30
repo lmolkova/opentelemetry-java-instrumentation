@@ -17,7 +17,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtr
 import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.javaagent.instrumentation.api.instrumenter.PeerServiceAttributesExtractor;
 import org.apache.http.HttpResponse;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class ApacheHttpAsyncClientSingletons {
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.apache-httpasyncclient-4.1";
