@@ -13,7 +13,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.javaagent.instrumentation.api.instrumenter.PeerServiceAttributesExtractor;
 
 public final class LettuceSingletons {
@@ -31,19 +30,21 @@ public final class LettuceSingletons {
 
     INSTRUMENTER =
         Instrumenter.<RedisCommand<?, ?, ?>, Void>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.DB, spanName)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanName)
             .addAttributesExtractor(attributesExtractor)
+            // TODO (lmolkova) switch to clientInstrumenter (no propagation)
             .newInstrumenter(SpanKindExtractor.alwaysClient());
 
     LettuceConnectNetAttributesExtractor connectNetAttributesExtractor =
         new LettuceConnectNetAttributesExtractor();
     CONNECT_INSTRUMENTER =
         Instrumenter.<RedisURI, Void>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.DB, redisUri -> "CONNECT")
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, redisUri -> "CONNECT")
             .addAttributesExtractor(connectNetAttributesExtractor)
             .addAttributesExtractor(
                 PeerServiceAttributesExtractor.create(connectNetAttributesExtractor))
             .addAttributesExtractor(new LettuceConnectAttributesExtractor())
+            // TODO (lmolkova) switch to clientInstrumenter (no propagation)
             .newInstrumenter(SpanKindExtractor.alwaysClient());
   }
 

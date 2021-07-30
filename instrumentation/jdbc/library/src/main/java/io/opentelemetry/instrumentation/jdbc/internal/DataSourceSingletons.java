@@ -10,7 +10,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.code.CodeAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.code.CodeSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import javax.sql.DataSource;
 
 public final class DataSourceSingletons {
@@ -26,8 +25,9 @@ public final class DataSourceSingletons {
 
     INSTRUMENTER =
         Instrumenter.<DataSource, Void>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.DB, spanNameExtractor)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanNameExtractor)
             .addAttributesExtractor(attributesExtractor)
+            // TODO (lmolkova) should it be client instrumenter?
             .newInstrumenter();
   }
 

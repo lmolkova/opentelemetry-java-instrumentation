@@ -37,9 +37,6 @@ public abstract class DatabaseClientTracer<CONNECTION, STATEMENT, SANITIZEDSTATE
     this.netPeerAttributes = netPeerAttributes;
   }
 
-  @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.DB;}
-
   public boolean shouldStartSpan(Context parentContext) {
     return shouldStartSpan(parentContext, CLIENT);
   }

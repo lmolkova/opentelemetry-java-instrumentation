@@ -59,18 +59,14 @@ public class Instrumenter<REQUEST, RESPONSE> {
   public static <REQUEST, RESPONSE> InstrumenterBuilder<REQUEST, RESPONSE> newBuilder(
       OpenTelemetry openTelemetry,
       String instrumentationName,
-      InstrumentationType instrumentationType,
       SpanNameExtractor<? super REQUEST> spanNameExtractor) {
-    return new InstrumenterBuilder<>(openTelemetry, instrumentationName, instrumentationType, spanNameExtractor);
+    return new InstrumenterBuilder<>(openTelemetry, instrumentationName, spanNameExtractor);
   }
 
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
 
   private final String instrumentationName;
-  // TODO we should be able to figure it out from the schema_url?
-  // but then we'd have multiple versions with different urls
-  // and we want to suppress multiple versions of the same instrumentation
-  private final InstrumentationType instrumentationType;
+
   private final Tracer tracer;
   private final SpanNameExtractor<? super REQUEST> spanNameExtractor;
   private final SpanKindExtractor<? super REQUEST> spanKindExtractor;
@@ -81,6 +77,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private final List<? extends RequestListener> requestListeners;
   private final ErrorCauseExtractor errorCauseExtractor;
 
+  @Nullable private final InstrumentationType instrumentationType;
   @Nullable private final StartTimeExtractor<REQUEST> startTimeExtractor;
   @Nullable private final EndTimeExtractor<RESPONSE> endTimeExtractor;
 

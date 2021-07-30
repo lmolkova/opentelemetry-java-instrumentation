@@ -11,7 +11,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.grpc.v1_6.internal.GrpcNetAttributesExtractor;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +55,7 @@ public final class GrpcTracingBuilder {
   /** Returns a new {@link GrpcTracing} with the settings of this {@link GrpcTracingBuilder}. */
   public GrpcTracing build() {
     InstrumenterBuilder<GrpcRequest, Status> instrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.RPC, new GrpcSpanNameExtractor());
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, new GrpcSpanNameExtractor());
     instrumenterBuilder
         .setSpanStatusExtractor(new GrpcSpanStatusExtractor())
         .addAttributesExtractors(
@@ -68,6 +67,7 @@ public final class GrpcTracingBuilder {
         instrumenterBuilder.newServerInstrumenter(GrpcExtractAdapter.GETTER),
         // gRPC client interceptors require two phases, one to set up request and one to execute.
         // So we go ahead and inject manually in this instrumentation.
+        // TODO (lmolkova) switch to clientInstrumenter (no propagation)
         instrumenterBuilder.newInstrumenter(SpanKindExtractor.alwaysClient()),
         openTelemetry.getPropagators(),
         captureExperimentalSpanAttributes);

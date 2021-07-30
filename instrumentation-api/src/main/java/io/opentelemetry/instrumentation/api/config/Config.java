@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 
 @AutoValue
 public abstract class Config {
+
+  // TODO find better place for it
+  public static final String ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY = "otel.instrumentation.enable_suppression_by_type";
+
   private static final Logger logger = LoggerFactory.getLogger(Config.class);
 
   // lazy initialized, so that javaagent can set it, and library instrumentation can fall back and

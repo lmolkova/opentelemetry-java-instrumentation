@@ -6,6 +6,7 @@
 package io.opentelemetry.instrumentation.jetty.httpclient.v9_2.internal;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
@@ -17,12 +18,17 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtr
 import java.util.ArrayList;
 import java.util.List;
 import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
 public final class JettyClientInstrumenterBuilder {
 
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.jetty-httpclient-9.2";
+
+  @Nullable private static final InstrumentationType INSTRUMENTATION_TYPE = Config.get()
+    .getBooleanProperty(
+      Config.ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY, false) ? InstrumentationType.HTTP : null;
 
   private final OpenTelemetry openTelemetry;
 
@@ -51,13 +57,13 @@ public final class JettyClientInstrumenterBuilder {
 
     Instrumenter<Request, Response> instrumenter =
         Instrumenter.<Request, Response>newBuilder(
-                this.openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.HTTP, spanNameExtractor)
+                this.openTelemetry, INSTRUMENTATION_NAME, spanNameExtractor)
             .setSpanStatusExtractor(spanStatusExtractor)
             .addAttributesExtractor(httpAttributesExtractor)
             .addAttributesExtractor(netAttributesExtractor)
             .addAttributesExtractors(additionalExtractors)
             .addRequestMetrics(HttpClientMetrics.get())
-            .newClientInstrumenter(new HttpHeaderSetter());
+            .newClientInstrumenter(new HttpHeaderSetter(), INSTRUMENTATION_TYPE);
     return instrumenter;
   }
 }

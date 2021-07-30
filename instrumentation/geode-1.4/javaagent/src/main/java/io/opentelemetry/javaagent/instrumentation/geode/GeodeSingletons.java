@@ -11,7 +11,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 
 public final class GeodeSingletons {
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.geode-1.4";
@@ -25,8 +24,9 @@ public final class GeodeSingletons {
 
     INSTRUMENTER =
         Instrumenter.<GeodeRequest, Void>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.DB, spanName)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanName)
             .addAttributesExtractor(attributesExtractor)
+            // TODO (lmolkova) switch to clientInstrumenter (no propagation)
             .newInstrumenter(SpanKindExtractor.alwaysClient());
   }
 

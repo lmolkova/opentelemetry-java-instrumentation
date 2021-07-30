@@ -6,6 +6,7 @@
 package io.opentelemetry.javaagent.instrumentation.apachehttpasyncclient;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusExtractor;
@@ -16,10 +17,11 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtr
 import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.javaagent.instrumentation.api.instrumenter.PeerServiceAttributesExtractor;
 import org.apache.http.HttpResponse;
+import javax.annotation.Nullable;
 
 public final class ApacheHttpAsyncClientSingletons {
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.apache-httpasyncclient-4.1";
-
+  
   private static final Instrumenter<ApacheHttpClientRequest, HttpResponse> INSTRUMENTER;
 
   static {
@@ -31,16 +33,19 @@ public final class ApacheHttpAsyncClientSingletons {
         HttpSpanStatusExtractor.create(httpAttributesExtractor);
     ApacheHttpAsyncClientNetAttributesExtractor netAttributesExtractor =
         new ApacheHttpAsyncClientNetAttributesExtractor();
+    @Nullable InstrumentationType INSTRUMENTATION_TYPE = Config.get()
+        .getBooleanProperty(
+            Config.ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY, false) ? InstrumentationType.HTTP : null;
 
     INSTRUMENTER =
         Instrumenter.<ApacheHttpClientRequest, HttpResponse>newBuilder(
-                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, InstrumentationType.HTTP, spanNameExtractor)
+                GlobalOpenTelemetry.get(), INSTRUMENTATION_NAME, spanNameExtractor)
             .setSpanStatusExtractor(spanStatusExtractor)
             .addAttributesExtractor(httpAttributesExtractor)
             .addAttributesExtractor(netAttributesExtractor)
             .addAttributesExtractor(PeerServiceAttributesExtractor.create(netAttributesExtractor))
             .addRequestMetrics(HttpClientMetrics.get())
-            .newClientInstrumenter(new HttpHeaderSetter());
+            .newClientInstrumenter(new HttpHeaderSetter(), INSTRUMENTATION_TYPE);
   }
 
   public static Instrumenter<ApacheHttpClientRequest, HttpResponse> instrumenter() {

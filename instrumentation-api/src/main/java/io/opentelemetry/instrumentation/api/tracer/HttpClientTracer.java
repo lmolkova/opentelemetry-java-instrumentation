@@ -44,9 +44,6 @@ public abstract class HttpClientTracer<REQUEST, CARRIER, RESPONSE> extends BaseT
     this.netPeerAttributes = netPeerAttributes;
   }
 
-  @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.HTTP;}
-
   protected abstract String method(REQUEST request);
 
   @Nullable

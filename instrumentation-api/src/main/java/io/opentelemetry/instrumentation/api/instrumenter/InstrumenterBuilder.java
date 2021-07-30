@@ -30,7 +30,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   final OpenTelemetry openTelemetry;
   final Meter meter;
   final String instrumentationName;
-  final InstrumentationType instrumentationType;
+
   final SpanNameExtractor<? super REQUEST> spanNameExtractor;
 
   final List<AttributesExtractor<? super REQUEST, ? super RESPONSE>> attributesExtractors =
@@ -43,19 +43,18 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
       SpanStatusExtractor.getDefault();
   ErrorCauseExtractor errorCauseExtractor = ErrorCauseExtractor.jdk();
 
+  @Nullable InstrumentationType instrumentationType;
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
       String instrumentationName,
-      InstrumentationType instrumentationType,
       SpanNameExtractor<? super REQUEST> spanNameExtractor) {
     this.openTelemetry = openTelemetry;
+    this.instrumentationName = instrumentationName;
     // TODO(anuraaga): Retrieve from openTelemetry when not alpha anymore.
     this.meter = GlobalMeterProvider.get().get(instrumentationName);
-    this.instrumentationName = instrumentationName;
-    this.instrumentationType = instrumentationType;
     this.spanNameExtractor = spanNameExtractor;
   }
 
@@ -129,9 +128,9 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
    * Returns a new {@link Instrumenter} which will create client spans and inject context into
    * requests.
    */
-  public Instrumenter<REQUEST, RESPONSE> newClientInstrumenter(TextMapSetter<REQUEST> setter) {
+  public Instrumenter<REQUEST, RESPONSE> newClientInstrumenter(TextMapSetter<REQUEST> setter, @Nullable InstrumentationType instrumentationType) {
     return newInstrumenter(
-        InstrumenterConstructor.propagatingToDownstream(setter), SpanKindExtractor.alwaysClient());
+        InstrumenterConstructor.propagatingToDownstream(setter), SpanKindExtractor.alwaysClient(), instrumentationType);
   }
 
   /**
@@ -149,7 +148,8 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   public Instrumenter<REQUEST, RESPONSE> newProducerInstrumenter(TextMapSetter<REQUEST> setter) {
     return newInstrumenter(
         InstrumenterConstructor.propagatingToDownstream(setter),
-        SpanKindExtractor.alwaysProducer());
+        SpanKindExtractor.alwaysProducer(),
+        null);
   }
 
   /**
@@ -167,7 +167,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   public Instrumenter<REQUEST, RESPONSE> newUpstreamPropagatingInstrumenter(
       SpanKindExtractor<REQUEST> spanKindExtractor, TextMapGetter<REQUEST> getter) {
     return newInstrumenter(
-        InstrumenterConstructor.propagatingFromUpstream(getter), spanKindExtractor);
+        InstrumenterConstructor.propagatingFromUpstream(getter), spanKindExtractor, null);
   }
 
   /**
@@ -175,7 +175,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
    * propagation.
    */
   public Instrumenter<REQUEST, RESPONSE> newInstrumenter() {
-    return newInstrumenter(InstrumenterConstructor.internal(), SpanKindExtractor.alwaysInternal());
+    return newInstrumenter(InstrumenterConstructor.internal(), SpanKindExtractor.alwaysInternal(), null);
   }
 
   /**
@@ -184,13 +184,15 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
    */
   public Instrumenter<REQUEST, RESPONSE> newInstrumenter(
       SpanKindExtractor<? super REQUEST> spanKindExtractor) {
-    return newInstrumenter(InstrumenterConstructor.internal(), spanKindExtractor);
+    return newInstrumenter(InstrumenterConstructor.internal(), spanKindExtractor, null);
   }
 
   private Instrumenter<REQUEST, RESPONSE> newInstrumenter(
       InstrumenterConstructor<REQUEST, RESPONSE> constructor,
-      SpanKindExtractor<? super REQUEST> spanKindExtractor) {
+      SpanKindExtractor<? super REQUEST> spanKindExtractor,
+      @Nullable InstrumentationType instrumenationType) {
     this.spanKindExtractor = spanKindExtractor;
+    this.instrumentationType = instrumenationType;
     return constructor.create(this);
   }
 

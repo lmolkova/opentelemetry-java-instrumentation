@@ -10,6 +10,7 @@ import com.linecorp.armeria.common.RequestContext;
 import com.linecorp.armeria.common.logging.RequestLog;
 import com.linecorp.armeria.server.ServiceRequestContext;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
@@ -21,6 +22,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtrac
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.armeria.v1_3.internal.ArmeriaNetAttributesExtractor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -29,6 +31,10 @@ import java.util.stream.Stream;
 public final class ArmeriaTracingBuilder {
 
   private static final String INSTRUMENTATION_NAME = "io.opentelemetry.armeria-1.3";
+  
+  @Nullable private static final InstrumentationType INSTRUMENTATION_TYPE = Config.get()
+      .getBooleanProperty(
+          Config.ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY, false) ? InstrumentationType.HTTP : null;
 
   private final OpenTelemetry openTelemetry;
 
@@ -73,9 +79,9 @@ public final class ArmeriaTracingBuilder {
         statusExtractorTransformer.apply(HttpSpanStatusExtractor.create(httpAttributesExtractor));
 
     InstrumenterBuilder<ClientRequestContext, RequestLog> clientInstrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, InstrumentationType.HTTP, spanNameExtractor);
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME, spanNameExtractor);
     InstrumenterBuilder<ServiceRequestContext, RequestLog> serverInstrumenterBuilder =
-        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  InstrumentationType.HTTP, spanNameExtractor);
+        Instrumenter.newBuilder(openTelemetry, INSTRUMENTATION_NAME,  spanNameExtractor);
 
     Stream.of(clientInstrumenterBuilder, serverInstrumenterBuilder)
         .forEach(
@@ -90,7 +96,7 @@ public final class ArmeriaTracingBuilder {
     serverInstrumenterBuilder.addRequestMetrics(HttpServerMetrics.get());
 
     return new ArmeriaTracing(
-        clientInstrumenterBuilder.newClientInstrumenter(new ClientRequestContextSetter()),
+        clientInstrumenterBuilder.newClientInstrumenter(new ClientRequestContextSetter(), INSTRUMENTATION_TYPE),
         serverInstrumenterBuilder.newServerInstrumenter(new RequestContextGetter()));
   }
 }

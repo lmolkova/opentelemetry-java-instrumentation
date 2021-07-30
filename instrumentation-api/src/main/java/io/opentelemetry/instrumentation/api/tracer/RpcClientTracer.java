@@ -14,8 +14,5 @@ public abstract class RpcClientTracer extends BaseTracer {
     super(openTelemetry);
   }
 
-  @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.RPC;}
-
   protected abstract String getRpcSystem();
 }

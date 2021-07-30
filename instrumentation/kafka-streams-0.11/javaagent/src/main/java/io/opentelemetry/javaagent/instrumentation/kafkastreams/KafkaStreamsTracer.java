@@ -12,7 +12,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.tracer.BaseTracer;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.apache.kafka.streams.processor.internals.StampedRecord;
 
@@ -60,7 +59,4 @@ public class KafkaStreamsTracer extends BaseTracer {
   protected String getInstrumentationName() {
     return "io.opentelemetry.kafka-streams-0.11";
   }
-
-  @Override
-  protected InstrumentationType getInstrumentationType() { return InstrumentationType.MESSAGING;}
 }

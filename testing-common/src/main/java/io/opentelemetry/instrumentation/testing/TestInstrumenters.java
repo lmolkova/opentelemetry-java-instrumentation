@@ -14,7 +14,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.testing.util.ThrowingSupplier;
 
 /** {@link Instrumenter}s to use when executing test code. */
@@ -26,13 +25,13 @@ final class TestInstrumenters {
 
   TestInstrumenters(OpenTelemetry openTelemetry) {
     testInstrumenter =
-        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", InstrumentationType.NONE, name -> name)
+        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", name -> name)
             .newInstrumenter(SpanKindExtractor.alwaysInternal());
     testClientInstrumenter =
-        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", InstrumentationType.NONE, name -> name)
+        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", name -> name)
             .newInstrumenter(SpanKindExtractor.alwaysClient());
     testServerInstrumenter =
-        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", InstrumentationType.NONE, name -> name)
+        Instrumenter.<String, Void>newBuilder(openTelemetry, "test", name -> name)
             .newInstrumenter(SpanKindExtractor.alwaysServer());
   }
 

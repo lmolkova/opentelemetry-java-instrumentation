@@ -20,6 +20,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.InstrumentationVersion;
 import io.opentelemetry.instrumentation.api.internal.ContextPropagationDebug;
 import io.opentelemetry.instrumentation.api.internal.SupportabilityMetrics;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.CompletionException;
@@ -81,8 +82,8 @@ public abstract class BaseTracer {
    */
   protected abstract String getInstrumentationName();
 
-  protected InstrumentationType getInstrumentationType() {
-    return InstrumentationType.NONE;
+  protected @Nullable InstrumentationType getInstrumentationType() {
+    return null;
   }
 
   /**
@@ -108,7 +109,7 @@ public abstract class BaseTracer {
     boolean suppressed = false;
     switch (proposedKind) {
       case CLIENT:
-        suppressed = ClientSpan.exists(context);
+        suppressed = ClientSpan.exists(context, getInstrumentationType());
         break;
       case SERVER:
       case CONSUMER:

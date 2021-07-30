@@ -11,7 +11,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import java.time.Instant;
 
 public final class JmsSingletons {
@@ -29,19 +28,19 @@ public final class JmsSingletons {
     OpenTelemetry otel = GlobalOpenTelemetry.get();
     PRODUCER_INSTRUMENTER =
         Instrumenter.<MessageWithDestination, Void>newBuilder(
-                otel, INSTRUMENTATION_NAME, InstrumentationType.MESSAGING, spanNameExtractor)
+                otel, INSTRUMENTATION_NAME, spanNameExtractor)
             .addAttributesExtractor(attributesExtractor)
             .newProducerInstrumenter(new MessagePropertySetter());
     // MessageConsumer does not do context propagation
     CONSUMER_INSTRUMENTER =
         Instrumenter.<MessageWithDestination, Void>newBuilder(
-                otel, INSTRUMENTATION_NAME, InstrumentationType.MESSAGING, spanNameExtractor)
+                otel, INSTRUMENTATION_NAME, spanNameExtractor)
             .addAttributesExtractor(attributesExtractor)
             .setTimeExtractors(MessageWithDestination::getStartTime, response -> Instant.now())
             .newInstrumenter(SpanKindExtractor.alwaysConsumer());
     LISTENER_INSTRUMENTER =
         Instrumenter.<MessageWithDestination, Void>newBuilder(
-                otel, INSTRUMENTATION_NAME, InstrumentationType.MESSAGING, spanNameExtractor)
+                otel, INSTRUMENTATION_NAME, spanNameExtractor)
             .addAttributesExtractor(attributesExtractor)
             .newConsumerInstrumenter(new MessagePropertyGetter());
   }

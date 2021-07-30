@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -120,19 +121,19 @@ class InstrumenterTest {
   @RegisterExtension
   static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
-  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(InstrumentationType type) {
+  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(@Nullable InstrumentationType type) {
     return Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
-        otelTesting.getOpenTelemetry(), "test", type, unused -> "span")
+        otelTesting.getOpenTelemetry(), "test", unused -> "span")
         .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
         .addSpanLinkExtractor(new LinkExtractor())
-        .newClientInstrumenter(Map::put);
+        .newClientInstrumenter(Map::put, type);
   }
 
   @Test
   void server() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
-                otelTesting.getOpenTelemetry(), "test", InstrumentationType.NONE, unused -> "span")
+                otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
             .addSpanLinkExtractor(new LinkExtractor())
             .newServerInstrumenter(new MapGetter());
@@ -176,7 +177,7 @@ class InstrumenterTest {
   void server_error() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
-                otelTesting.getOpenTelemetry(), "test", InstrumentationType.NONE, unused -> "span")
+                otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
             .newServerInstrumenter(new MapGetter());
 
@@ -200,7 +201,7 @@ class InstrumenterTest {
   void server_parent() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
-                otelTesting.getOpenTelemetry(), "test", InstrumentationType.NONE, unused -> "span")
+                otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
             .newServerInstrumenter(new MapGetter());
 
@@ -278,21 +279,19 @@ class InstrumenterTest {
   }
 
   @Test
-  void clientNestedSuppressed() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.HTTP);
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+  void clientNestedSpansSuppressed_NoInstrumentationType() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(null);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(null);
 
     Map<String, String> request = new HashMap<>(REQUEST);
-
-    assertThat(instrumenterOuter.shouldStart(Context.root(), request)).isTrue();
-    assertThat(instrumenterInner.shouldStart(Context.root(), request)).isTrue();
 
     Context context = instrumenterOuter.start(Context.root(), request);
     assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
   }
 
   @Test
-  void clientNestedDifferentTypesNotSuppressed() {
+  void clientNestedDifferentTypesSuppressed() {
+    System.setProperty("otel.instrumentation.enable_suppression_by_type", "true");
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.DB);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
 
@@ -300,24 +299,43 @@ class InstrumenterTest {
 
     Context context = instrumenterOuter.start(Context.root(), request);
 
-    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
   }
 
   @Test
-  void clientNestedNoneNotSuppressed() {
+  void clientNestedSuppressed_SameInstrumentationType() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.HTTP);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+
+    assertThat(instrumenterOuter.shouldStart(Context.root(), REQUEST)).isTrue();
+    assertThat(instrumenterInner.shouldStart(Context.root(), REQUEST)).isTrue();
+
+    Context context = instrumenterOuter.start(Context.root(), REQUEST);
+    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isFalse();
+  }
+
+  @Test
+  void clientNestedDifferentTypesNotSuppressed_DifferentInstrumentationTypes() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.DB);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+
+    Context context = instrumenterOuter.start(Context.root(), REQUEST);
+    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isTrue();
+  }
+
+
+  @Test
+  void clientNestNoneNotSuppressed_NoneType() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.NONE);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.NONE);
 
-    Map<String, String> request = new HashMap<>(REQUEST);
-
-    Context context = instrumenterOuter.start(Context.root(), request);
-
-    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+    Context context = instrumenterOuter.start(Context.root(), REQUEST);
+    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isTrue();
   }
 
   @Test
   void client_error() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenter = getClientInstrumenter(InstrumentationType.NONE);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenter = getClientInstrumenter(null);
 
     Map<String, String> request = new HashMap<>(REQUEST);
     Context context = instrumenter.start(Context.root(), request);
@@ -338,7 +356,7 @@ class InstrumenterTest {
 
   @Test
   void client_parent() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenter = getClientInstrumenter(InstrumentationType.NONE);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenter = getClientInstrumenter(null);
 
     Context parent =
         Context.root()
@@ -376,7 +394,7 @@ class InstrumenterTest {
     // given
     Instrumenter<Instant, Instant> instrumenter =
         Instrumenter.<Instant, Instant>newBuilder(
-                otelTesting.getOpenTelemetry(), "test", InstrumentationType.NONE, request -> "test span")
+                otelTesting.getOpenTelemetry(), "test", request -> "test span")
             .setTimeExtractors(request -> request, response -> response)
             .newInstrumenter();
 
@@ -401,7 +419,7 @@ class InstrumenterTest {
     // given
     Instrumenter<String, String> instrumenter =
         Instrumenter.<String, String>newBuilder(
-                otelTesting.getOpenTelemetry(), "test", InstrumentationType.NONE, request -> "test span")
+                otelTesting.getOpenTelemetry(), "test", request -> "test span")
             .addSpanLinkExtractor((parentContext, request) -> SpanContext.getInvalid())
             .newInstrumenter();
 
