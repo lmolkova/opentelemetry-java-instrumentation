@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -121,7 +120,7 @@ class InstrumenterTest {
   @RegisterExtension
   static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
-  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(@Nullable InstrumentationType type) {
+  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(InstrumentationType type) {
     return Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
         otelTesting.getOpenTelemetry(), "test", unused -> "span")
         .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
@@ -279,7 +278,7 @@ class InstrumenterTest {
   }
 
   @Test
-  void clientNestedSpansSuppressed_NoInstrumentationType() {
+  void clientNestedSpansSuppressedNoInstrumentationType() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(null);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(null);
 
@@ -290,47 +289,39 @@ class InstrumenterTest {
   }
 
   @Test
-  void clientNestedDifferentTypesSuppressed() {
-    System.setProperty("otel.instrumentation.enable_suppression_by_type", "true");
+  void clientNestedSuppressedSameInstrumentationType() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.HTTP);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    assertThat(instrumenterOuter.shouldStart(Context.root(), request)).isTrue();
+    assertThat(instrumenterInner.shouldStart(Context.root(), request)).isTrue();
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
+  }
+
+  @Test
+  void clientNestedNotSuppressedDifferentInstrumentationTypes() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.DB);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
 
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenterOuter.start(Context.root(), request);
-
-    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
-  }
-
-  @Test
-  void clientNestedSuppressed_SameInstrumentationType() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.HTTP);
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
-
-    assertThat(instrumenterOuter.shouldStart(Context.root(), REQUEST)).isTrue();
-    assertThat(instrumenterInner.shouldStart(Context.root(), REQUEST)).isTrue();
-
-    Context context = instrumenterOuter.start(Context.root(), REQUEST);
-    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isFalse();
-  }
-
-  @Test
-  void clientNestedDifferentTypesNotSuppressed_DifferentInstrumentationTypes() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.DB);
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
-
-    Context context = instrumenterOuter.start(Context.root(), REQUEST);
-    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isTrue();
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
   }
 
 
   @Test
-  void clientNestNoneNotSuppressed_NoneType() {
+  void clientNestNoneNotSuppressed() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.NONE);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.NONE);
 
-    Context context = instrumenterOuter.start(Context.root(), REQUEST);
-    assertThat(instrumenterInner.shouldStart(context, REQUEST)).isTrue();
+    Map<String, String> request = new HashMap<>(REQUEST);
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
   }
 
   @Test
