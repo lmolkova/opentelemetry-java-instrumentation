@@ -21,6 +21,7 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationCategory;
 import io.opentelemetry.sdk.common.InstrumentationLibraryInfo;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.LinkData;
@@ -382,6 +383,61 @@ class InstrumenterTest {
             trace ->
                 trace.hasSpansSatisfyingExactly(
                     span -> span.hasName("test span").hasTotalRecordedLinks(0)));
+  }
+
+  @Test
+  void clientNestedSpansSuppressedNoInstrumentationCAtegory() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(null);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(null);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
+  }
+
+  @Test
+  void clientNestedSuppressedSameInstrumentationCategory() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationCategory.HTTP);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationCategory.HTTP);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    assertThat(instrumenterOuter.shouldStart(Context.root(), request)).isTrue();
+    assertThat(instrumenterInner.shouldStart(Context.root(), request)).isTrue();
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
+  }
+
+  @Test
+  void clientNestedNotSuppressedDifferentInstrumentationCategories() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationCategory.DB);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationCategory.HTTP);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+  }
+
+  @Test
+  void clientNestNoneNotSuppressed() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationCategory.CUSTOM);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationCategory.CUSTOM);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+  }
+
+  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(InstrumentationCategory category) {
+    return Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
+        otelTesting.getOpenTelemetry(), "test", unused -> "span")
+        .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+        .addSpanLinkExtractor(new LinkExtractor())
+        .setInstrumentationCategory(category)
+        .newClientInstrumenter(Map::put);
   }
 
   private static LinkData expectedSpanLink() {

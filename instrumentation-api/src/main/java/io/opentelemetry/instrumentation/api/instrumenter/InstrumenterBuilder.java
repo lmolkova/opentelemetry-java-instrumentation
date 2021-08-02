@@ -17,7 +17,13 @@ import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationCategory;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A builder of {@link Instrumenter}. Instrumentation libraries should generally expose their own
@@ -42,6 +48,8 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   ErrorCauseExtractor errorCauseExtractor = ErrorCauseExtractor.jdk();
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
+
+  private @Nullable InstrumentationCategory instrumentationCategory = null;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
@@ -120,6 +128,11 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return this;
   }
 
+  public InstrumenterBuilder<REQUEST, RESPONSE> setInstrumentationCategory(@NonNull InstrumentationCategory instrumentationCategory) {
+    this.instrumentationCategory = instrumentationCategory;
+    return this;
+  }
+
   /**
    * Returns a new {@link Instrumenter} which will create client spans and inject context into
    * requests.
@@ -187,6 +200,39 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
       SpanKindExtractor<? super REQUEST> spanKindExtractor) {
     this.spanKindExtractor = spanKindExtractor;
     return constructor.create(this);
+  }
+
+  @Nullable InstrumentationCategory getInstrumentationCategory() {
+    if (instrumentationCategory != null) {
+      return instrumentationCategory;
+    } else if (InstrumentationCategory.isEnabled()) {
+      return categoryFromAttributeExtractor(this.attributesExtractors);
+    }
+
+    return null;
+  }
+
+  private static InstrumentationCategory categoryFromAttributeExtractor(
+      List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
+
+    if (attributesExtractors == null || attributesExtractors.isEmpty() || attributesExtractors.size() > 1) {
+      // instrumentation with no attributes or mixed attributes is custom
+      return InstrumentationCategory.CUSTOM;
+    }
+
+    AttributesExtractor<?, ?> attributeExtractor = attributesExtractors.get(0);
+
+    if (attributeExtractor instanceof HttpAttributesExtractor) {
+      return InstrumentationCategory.HTTP;
+    } else if (attributeExtractor instanceof DbAttributesExtractor){
+      return InstrumentationCategory.DB;
+    } else if (attributeExtractor instanceof MessagingAttributesExtractor){
+      return InstrumentationCategory.MESSAGING;
+    } else if (attributeExtractor instanceof RpcAttributesExtractor){
+      return InstrumentationCategory.RPC;
+    } else {
+      return InstrumentationCategory.CUSTOM;
+    }
   }
 
   private interface InstrumenterConstructor<RQ, RS> {

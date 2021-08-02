@@ -21,21 +21,20 @@ public final class ClientSpan {
       ContextKey.named("opentelemetry-traces-client-span-key");
 
   /** Returns true when a {@link SpanKind#CLIENT} span is present in the passed {@code context}. */
-  public static boolean exists(Context context) {
-    return fromContextOrNull(context) != null;
+  public static boolean exists(Context context, @Nullable InstrumentationCategory instrumentationCategory) {
+    if (instrumentationCategory == null) {
+      return context.get(KEY) != null;
+    }
+
+    return instrumentationCategory.getMatchingSpan(context) != null;
   }
 
-  /**
-   * Returns span of type {@link SpanKind#CLIENT} from the given context or {@code null} if not
-   * found.
-   */
-  @Nullable
-  public static Span fromContextOrNull(Context context) {
-    return context.get(KEY);
-  }
+  public static Context with(Context context, Span clientSpan, @Nullable InstrumentationCategory instrumentationCategory) {
+    if (instrumentationCategory == null) {
+      return context.with(KEY, clientSpan);
+    }
 
-  public static Context with(Context context, Span clientSpan) {
-    return context.with(KEY, clientSpan);
+    return instrumentationCategory.setSpan(clientSpan, context);
   }
 
   private ClientSpan() {}
