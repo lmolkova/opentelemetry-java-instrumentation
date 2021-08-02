@@ -134,18 +134,22 @@ class InstrumenterTest {
 
   @Test
   void server() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
             .addSpanLinkExtractor(new LinkExtractor())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Context context = instrumenter.start(Context.root(), REQUEST);
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
 
@@ -178,17 +182,22 @@ class InstrumenterTest {
 
   @Test
   void server_error() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Context context = instrumenter.start(Context.root(), REQUEST);
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, new IllegalStateException("test"));
 
@@ -202,10 +211,13 @@ class InstrumenterTest {
 
   @Test
   void server_parent() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Map<String, String> request = new HashMap<>(REQUEST);
@@ -225,7 +237,9 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);
 
@@ -733,6 +747,65 @@ class InstrumenterTest {
             ServerInstrumenter.extractForwardedFor(
                 "[1111:1111:1111:1111:1111:1111:1111:1111]:2222,1.2.3.4"))
         .isEqualTo("1111:1111:1111:1111:1111:1111:1111:1111");
+
+  void clientNestedSpansSuppressedInstrumentationTypeDisabled() {
+    // this test depends on default config option for InstrumentationType
+
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(null);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(null);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
+  }
+
+  @Test
+  void clientNestedSuppressedSameInstrumentationType() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.HTTP);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    assertThat(instrumenterOuter.shouldStart(Context.root(), request)).isTrue();
+    assertThat(instrumenterInner.shouldStart(Context.root(), request)).isTrue();
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isFalse();
+  }
+
+  @Test
+  void clientNestedNotSuppressedDifferentInstrumentationCategories() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.DB);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.HTTP);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+  }
+
+  @Test
+  void clientNestedGenericNotSuppressed() {
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.GENERIC);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.GENERIC);
+
+    Map<String, String> request = new HashMap<>(REQUEST);
+    Context context = instrumenterOuter.start(Context.root(), request);
+    assertThat(instrumenterInner.shouldStart(context, request)).isTrue();
+  }
+
+  private static Instrumenter<Map<String, String>, Map<String, String>> getClientInstrumenter(InstrumentationType type) {
+    InstrumenterBuilder<Map<String, String>, Map<String, String>> builder = Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
+        otelTesting.getOpenTelemetry(), "test", unused -> "span")
+        .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+        .addSpanLinkExtractor(new LinkExtractor());
+
+    if (type != null) {
+      builder.setInstrumentationType(type);
+    }
+
+    return builder.newClientInstrumenter(Map::put);
   }
 
   private static LinkData expectedSpanLink() {

@@ -17,7 +17,12 @@ import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A builder of {@link Instrumenter}. Instrumentation libraries should generally expose their own
@@ -25,6 +30,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * {@link Instrumenter}.
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
+
+  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = InstrumentationType.getOrCreate("none");
 
   final OpenTelemetry openTelemetry;
   final Meter meter;
@@ -42,6 +49,8 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   ErrorCauseExtractor errorCauseExtractor = ErrorCauseExtractor.jdk();
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
+
+  private InstrumentationType instrumentationType = null;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
@@ -120,6 +129,11 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return this;
   }
 
+  public InstrumenterBuilder<REQUEST, RESPONSE> setInstrumentationType(@NonNull InstrumentationType instrumentationType) {
+    this.instrumentationType = instrumentationType;
+    return this;
+  }
+
   /**
    * Returns a new {@link Instrumenter} which will create client spans and inject context into
    * requests.
@@ -187,6 +201,41 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
       SpanKindExtractor<? super REQUEST> spanKindExtractor) {
     this.spanKindExtractor = spanKindExtractor;
     return constructor.create(this);
+  }
+
+  InstrumentationType getInstrumentationType() {
+    if (instrumentationType != null) {
+      return instrumentationType;
+    }
+
+    return typeFromAttributeExtractor(this.attributesExtractors);
+  }
+
+  private static InstrumentationType typeFromAttributeExtractor(
+      List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
+
+    if (!InstrumentationType.isEnabled()) {
+      // if not enabled, preserve current behavior, not distinguishing types
+      return DISABLED_INSTRUMENTATION_TYPE;
+    }
+
+    // instrumentation with no attributes or mixed attributes is custom
+    if (attributesExtractors != null && attributesExtractors.size() == 1) {
+
+      AttributesExtractor<?, ?> attributeExtractor = attributesExtractors.get(0);
+
+      if (attributeExtractor instanceof HttpAttributesExtractor) {
+        return InstrumentationType.HTTP;
+      } else if (attributeExtractor instanceof DbAttributesExtractor) {
+        return InstrumentationType.DB;
+      } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
+        return InstrumentationType.MESSAGING;
+      } else if (attributeExtractor instanceof RpcAttributesExtractor) {
+        return InstrumentationType.RPC;
+      }
+    }
+
+    return InstrumentationType.GENERIC;
   }
 
   private interface InstrumenterConstructor<RQ, RS> {
