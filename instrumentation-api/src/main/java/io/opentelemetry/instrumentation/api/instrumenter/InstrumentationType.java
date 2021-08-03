@@ -6,9 +6,6 @@
 package io.opentelemetry.instrumentation.api.instrumenter;
 
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.instrumentation.api.config.Config;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * An instrumentation type that distinguishes span within kind: as HTTP, DB, MESSAGING, RPC,
@@ -16,59 +13,38 @@ import java.util.Map;
  * to find and enrich spans of certain type in the current stack;
  */
 public class InstrumentationType {
-  private static final boolean IS_ENABLED;
-  private static final SuppressingSpanWrapper internalSpan;
-  private static final SuppressingSpanWrapper serverSpan;
-  // we want singleton for each instrumentation type so multiple instrumenters
-  // that are not aware of each other would share the same instance (i.e. same context keys for suppression)
-  private static final Map<String, SuppressingSpanWrapper> clientSpanWrappers;
+  private static final SuppressingSpanWrapper INTERNAL_SPAN = SuppressingSpanWrapper.neverSuppress();
+  private static final SuppressingSpanWrapper SERVER_SPAN = SuppressingSpanWrapper.suppressNestedIfSameType("server");
 
-  static {
-    IS_ENABLED = Config.get()
-        .getBooleanProperty(
-            "otel.instrumentation.experimental.span-suppression-by-type", false);
-
-    clientSpanWrappers = new HashMap<>();
-    internalSpan = SuppressingSpanWrapper.neverSuppress();
-    serverSpan = SuppressingSpanWrapper.suppressNestedIfSameType("server-");
-  }
-
-  public static final InstrumentationType HTTP = InstrumentationType.getOrCreate("http");
-  public static final InstrumentationType DB = InstrumentationType.getOrCreate("db");
-  public static final InstrumentationType MESSAGING = InstrumentationType.getOrCreate("messaging");
-  public static final InstrumentationType RPC = InstrumentationType.getOrCreate("rpc");
+  public static final InstrumentationType HTTP = new InstrumentationType("http");
+  public static final InstrumentationType DB = new InstrumentationType("db");
+  public static final InstrumentationType MESSAGING = new InstrumentationType("messaging");
+  public static final InstrumentationType RPC = new InstrumentationType("rpc");
   public static final InstrumentationType GENERIC = new InstrumentationType(SuppressingSpanWrapper.neverSuppress());
-
-  public static InstrumentationType getOrCreate(String instrumentationType) {
-    SuppressingSpanWrapper clientSpansWrapper = clientSpanWrappers.get(instrumentationType);
-    if (clientSpansWrapper == null) {
-      clientSpansWrapper = SuppressingSpanWrapper.suppressNestedIfSameType("client-" + instrumentationType);
-      clientSpanWrappers.put(instrumentationType, clientSpansWrapper);
-    }
-
-    return new InstrumentationType(clientSpansWrapper);
-  }
-
-  public static boolean isEnabled() {
-    return IS_ENABLED;
-  }
+  public static final InstrumentationType NONE = new InstrumentationType(SuppressingSpanWrapper.suppressNestedIfSameType("client"));
+  public static final String ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY =
+      "otel.instrumentation.experimental.span-suppression-by-type";
 
   private final SuppressingSpanWrapper clientSpan;
 
-  private InstrumentationType(SuppressingSpanWrapper clientSpan) {
-    this.clientSpan = clientSpan;
+  private InstrumentationType(String instrumentationType) {
+    this(SuppressingSpanWrapper.suppressNestedIfSameType("client-" + instrumentationType));
+  }
+
+  private InstrumentationType(SuppressingSpanWrapper clientSpanWrapper) {
+    this.clientSpan = clientSpanWrapper;
   }
 
   SuppressingSpanWrapper getSpanWrapper(SpanKind spanKind) {
     switch (spanKind) {
-      case SERVER:
-      case CONSUMER:
-        return serverSpan;
       case CLIENT:
       case PRODUCER:
         return clientSpan;
+      case SERVER:
+      case CONSUMER:
+        return SERVER_SPAN;
       default:
-        return internalSpan;
+        return INTERNAL_SPAN;
     }
   }
 }

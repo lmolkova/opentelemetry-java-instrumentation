@@ -134,7 +134,7 @@ class InstrumenterTest {
 
   @Test
   void server() {
-    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+    InstrumentationType instrumentationType = InstrumentationType.GENERIC;
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
@@ -182,7 +182,7 @@ class InstrumenterTest {
 
   @Test
   void server_error() {
-    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+    InstrumentationType instrumentationType =  InstrumentationType.GENERIC;
 
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
@@ -211,7 +211,7 @@ class InstrumenterTest {
 
   @Test
   void server_parent() {
-    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+    InstrumentationType instrumentationType =  InstrumentationType.GENERIC;
 
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(

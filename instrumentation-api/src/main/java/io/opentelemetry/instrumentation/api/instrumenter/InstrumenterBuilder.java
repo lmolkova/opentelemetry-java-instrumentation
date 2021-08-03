@@ -17,6 +17,7 @@ import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
@@ -30,9 +31,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  * {@link Instrumenter}.
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
-
-  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = InstrumentationType.getOrCreate("none");
-
   final OpenTelemetry openTelemetry;
   final Meter meter;
   final String instrumentationName;
@@ -214,9 +212,9 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   private static InstrumentationType typeFromAttributeExtractor(
       List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
 
-    if (!InstrumentationType.isEnabled()) {
+    if (!Config.get().getBooleanProperty(InstrumentationType.ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY, false)) {
       // if not enabled, preserve current behavior, not distinguishing types
-      return DISABLED_INSTRUMENTATION_TYPE;
+      return InstrumentationType.NONE;
     }
 
     // instrumentation with no attributes or mixed attributes is custom
