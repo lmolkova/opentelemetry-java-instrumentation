@@ -15,9 +15,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.InstrumentationVersion;
 import io.opentelemetry.instrumentation.api.internal.SupportabilityMetrics;
-import io.opentelemetry.instrumentation.api.tracer.ClientSpan;
 import io.opentelemetry.instrumentation.api.tracer.ConsumerSpan;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationCategory;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +65,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
 
   private final String instrumentationName;
-  private final InstrumentationCategory instrumentationCategory;
+  private final InstrumentationType instrumentationType;
   private final Tracer tracer;
   private final SpanNameExtractor<? super REQUEST> spanNameExtractor;
   private final SpanKindExtractor<? super REQUEST> spanKindExtractor;
@@ -92,7 +91,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
     this.errorCauseExtractor = builder.errorCauseExtractor;
     this.startTimeExtractor = builder.startTimeExtractor;
     this.endTimeExtractor = builder.endTimeExtractor;
-    this.instrumentationCategory = builder.getInstrumentationCategory();
+    this.instrumentationType = builder.getInstrumentationType();
   }
 
   /**
@@ -111,7 +110,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
         break;
       case CLIENT:
       case PRODUCER:
-        suppressed = ClientSpan.exists(parentContext, instrumentationCategory);
+        suppressed = instrumentationType.hasMatchingSpan(parentContext);
         break;
       default:
         break;
@@ -164,7 +163,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
       case SERVER:
         return ServerSpan.with(context, span);
       case CLIENT:
-        return ClientSpan.with(context, span, instrumentationCategory);
+        return instrumentationType.setSpan(span, context);
       case CONSUMER:
         return ConsumerSpan.with(context, span);
       default:

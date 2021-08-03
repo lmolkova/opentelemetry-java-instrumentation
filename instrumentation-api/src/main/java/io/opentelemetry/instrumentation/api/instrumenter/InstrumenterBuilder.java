@@ -21,7 +21,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtracto
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationCategory;
+import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -49,7 +49,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
 
-  private @Nullable InstrumentationCategory instrumentationCategory = null;
+  private InstrumentationType instrumentationType = null;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
@@ -128,8 +128,8 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return this;
   }
 
-  public InstrumenterBuilder<REQUEST, RESPONSE> setInstrumentationCategory(@NonNull InstrumentationCategory instrumentationCategory) {
-    this.instrumentationCategory = instrumentationCategory;
+  public InstrumenterBuilder<REQUEST, RESPONSE> setInstrumentationType(@NonNull InstrumentationType instrumentationType) {
+    this.instrumentationType = instrumentationType;
     return this;
   }
 
@@ -202,37 +202,39 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return constructor.create(this);
   }
 
-  @Nullable InstrumentationCategory getInstrumentationCategory() {
-    if (instrumentationCategory != null) {
-      return instrumentationCategory;
-    } else if (InstrumentationCategory.isEnabled()) {
-      return categoryFromAttributeExtractor(this.attributesExtractors);
+  InstrumentationType getInstrumentationType() {
+    if (instrumentationType != null) {
+      return instrumentationType;
     }
 
-    return null;
+    return typeFromAttributeExtractor(this.attributesExtractors);
   }
 
-  private static InstrumentationCategory categoryFromAttributeExtractor(
+  private static InstrumentationType typeFromAttributeExtractor(
       List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
 
-    if (attributesExtractors == null || attributesExtractors.isEmpty() || attributesExtractors.size() > 1) {
-      // instrumentation with no attributes or mixed attributes is custom
-      return InstrumentationCategory.CUSTOM;
+    if (!InstrumentationType.isEnabled()) {
+      // if not enabled, preserve current behavior, not distinguishing types
+      return InstrumentationType.NONE;
     }
 
-    AttributesExtractor<?, ?> attributeExtractor = attributesExtractors.get(0);
+    // instrumentation with no attributes or mixed attributes is custom
+    if (attributesExtractors != null && attributesExtractors.size() == 1) {
 
-    if (attributeExtractor instanceof HttpAttributesExtractor) {
-      return InstrumentationCategory.HTTP;
-    } else if (attributeExtractor instanceof DbAttributesExtractor){
-      return InstrumentationCategory.DB;
-    } else if (attributeExtractor instanceof MessagingAttributesExtractor){
-      return InstrumentationCategory.MESSAGING;
-    } else if (attributeExtractor instanceof RpcAttributesExtractor){
-      return InstrumentationCategory.RPC;
-    } else {
-      return InstrumentationCategory.CUSTOM;
+      AttributesExtractor<?, ?> attributeExtractor = attributesExtractors.get(0);
+
+      if (attributeExtractor instanceof HttpAttributesExtractor) {
+        return InstrumentationType.HTTP;
+      } else if (attributeExtractor instanceof DbAttributesExtractor) {
+        return InstrumentationType.DB;
+      } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
+        return InstrumentationType.MESSAGING;
+      } else if (attributeExtractor instanceof RpcAttributesExtractor) {
+        return InstrumentationType.RPC;
+      }
     }
+
+    return InstrumentationType.GENERIC;
   }
 
   private interface InstrumenterConstructor<RQ, RS> {
