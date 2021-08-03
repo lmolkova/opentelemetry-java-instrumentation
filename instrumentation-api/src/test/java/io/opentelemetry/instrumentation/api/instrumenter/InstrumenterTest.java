@@ -20,7 +20,6 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
-import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
 import io.opentelemetry.sdk.common.InstrumentationLibraryInfo;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.LinkData;
@@ -121,18 +120,22 @@ class InstrumenterTest {
 
   @Test
   void server() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
             .addSpanLinkExtractor(new LinkExtractor())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Context context = instrumenter.start(Context.root(), REQUEST);
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
 
@@ -165,17 +168,22 @@ class InstrumenterTest {
 
   @Test
   void server_error() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Context context = instrumenter.start(Context.root(), REQUEST);
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, new IllegalStateException("test"));
 
@@ -189,10 +197,13 @@ class InstrumenterTest {
 
   @Test
   void server_parent() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+            .setInstrumentationType(instrumentationType)
             .newServerInstrumenter(new MapGetter());
 
     Map<String, String> request = new HashMap<>(REQUEST);
@@ -212,7 +223,9 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(ServerSpan.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
+
+    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);
 

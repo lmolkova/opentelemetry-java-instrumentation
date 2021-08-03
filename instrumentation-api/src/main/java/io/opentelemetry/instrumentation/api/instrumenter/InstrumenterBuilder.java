@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
-  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = InstrumentationType.create("none");
+  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = InstrumentationType.getOrCreate("none");
 
   final OpenTelemetry openTelemetry;
   final Meter meter;

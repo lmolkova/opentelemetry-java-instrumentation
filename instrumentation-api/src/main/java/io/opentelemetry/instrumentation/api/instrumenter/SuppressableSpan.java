@@ -5,54 +5,47 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-abstract class SuppressableSpan {
-  private static final SuppressableSpan NEVER_SUPPRESS = new NeverSuppress();
-
-  protected ContextKey<Span> contextKey;
-
-  protected SuppressableSpan(ContextKey<Span> contextKey) {
-    this.contextKey = contextKey;
-  }
-
-  public static SuppressableSpan suppressNestedIfSameType(String type) {
+interface SuppressableSpan {
+  static SuppressableSpan suppressNestedIfSameType(String type) {
     return new SuppressIfSameType(type);
   }
 
-  public static SuppressableSpan neverSuppress() {
-    return NEVER_SUPPRESS;
+  static SuppressableSpan neverSuppress() {
+    return new NeverSuppress();
   }
 
-  public Context setSpanInContext(Span span, Context context) {
-    return context.with(contextKey, span);
-  }
+  Context setSpanInContext(Context context, Span span);
 
-  public @Nullable Span getMatchingSpanOrNull(Context context) {
-    return context.get(contextKey);
-  }
+  boolean hasMatchingSpan(Context context);
 
-  public boolean hasMatchingSpan(Context context) {
-    return context.get(contextKey) != null;
-  }
+  @Nullable Span getMatchingSpanOrNull(Context context);
 
-  private static final class SuppressIfSameType extends SuppressableSpan {
-    public SuppressIfSameType(String instrumentationType) {
-      super(ContextKey.named("opentelemetry-traces-span-key-client-" + instrumentationType));
-    }
-  }
+  final class SuppressIfSameType implements SuppressableSpan {
+    private final ContextKey<Span> contextKey;
 
-  private final static class SuppressNested extends SuppressableSpan {
-    public SuppressNested() {
-      super(ContextKey.named("opentelemetry-traces-span-key-single"));
-    }
-  }
-
-  private final static class NeverSuppress extends SuppressableSpan {
-    public NeverSuppress() {
-      super(ContextKey.named("opentelemetry-traces-span-key-generic"));
+    public SuppressIfSameType(String type) {
+      this.contextKey = ContextKey.named("opentelemetry-traces-span-key-" + type);
     }
 
     @Override
-    public Context setSpanInContext(Span span, Context context) {
+    public Context setSpanInContext(Context context, Span span) {
+      return context.with(contextKey, span);
+    }
+
+    @Override
+    public @Nullable Span getMatchingSpanOrNull(Context context){
+      return context.get(contextKey);
+    }
+
+    @Override
+    public boolean hasMatchingSpan(Context context) {
+      return context.get(contextKey) != null;
+    }
+  }
+
+  final class NeverSuppress implements SuppressableSpan {
+    @Override
+    public Context setSpanInContext(Context context, Span span) {
       return context;
     }
 
@@ -60,5 +53,11 @@ abstract class SuppressableSpan {
     public @Nullable Span getMatchingSpanOrNull(Context context) {
       return null;
     }
+
+    @Override
+    public boolean hasMatchingSpan(Context context) {
+      return false;
+    }
   }
 }
+
