@@ -134,7 +134,7 @@ class InstrumenterTest {
 
     assertThat(spanContext.isValid()).isTrue();
 
-    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
     assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
@@ -182,7 +182,7 @@ class InstrumenterTest {
 
     assertThat(spanContext.isValid()).isTrue();
 
-    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
     assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, new IllegalStateException("test"));
@@ -224,7 +224,7 @@ class InstrumenterTest {
 
     assertThat(spanContext.isValid()).isTrue();
 
-    Span serverKeySpan = instrumentationType.getSpan(SpanKind.SERVER).getMatchingSpanOrNull(context);
+    Span serverKeySpan = instrumentationType.getSpanWrapper(SpanKind.SERVER).getMatchingSpanOrNull(context);
     assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);

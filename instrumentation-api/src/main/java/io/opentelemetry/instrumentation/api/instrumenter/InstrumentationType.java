@@ -17,11 +17,11 @@ import java.util.Map;
  */
 public class InstrumentationType {
   private static final boolean IS_ENABLED;
-  private static final SuppressableSpan internalSpan;
-  private static final SuppressableSpan serverSpan;
+  private static final SuppressingSpanWrapper internalSpan;
+  private static final SuppressingSpanWrapper serverSpan;
   // we want singleton for each instrumentation type so multiple instrumenters
   // that are not aware of each other would share the same instance (i.e. same context keys for suppression)
-  private static final Map<String, SuppressableSpan> clientSpanWrappers;
+  private static final Map<String, SuppressingSpanWrapper> clientSpanWrappers;
 
   static {
     IS_ENABLED = Config.get()
@@ -29,20 +29,20 @@ public class InstrumentationType {
             "otel.instrumentation.experimental.span-suppression-by-type", false);
 
     clientSpanWrappers = new HashMap<>();
-    internalSpan = SuppressableSpan.neverSuppress();
-    serverSpan = SuppressableSpan.suppressNestedIfSameType("server-");
+    internalSpan = SuppressingSpanWrapper.neverSuppress();
+    serverSpan = SuppressingSpanWrapper.suppressNestedIfSameType("server-");
   }
 
   public static final InstrumentationType HTTP = InstrumentationType.getOrCreate("http");
   public static final InstrumentationType DB = InstrumentationType.getOrCreate("db");
   public static final InstrumentationType MESSAGING = InstrumentationType.getOrCreate("messaging");
   public static final InstrumentationType RPC = InstrumentationType.getOrCreate("rpc");
-  public static final InstrumentationType GENERIC = new InstrumentationType(SuppressableSpan.neverSuppress());
+  public static final InstrumentationType GENERIC = new InstrumentationType(SuppressingSpanWrapper.neverSuppress());
 
   public static InstrumentationType getOrCreate(String instrumentationType) {
-    SuppressableSpan clientSpansWrapper = clientSpanWrappers.get(instrumentationType);
+    SuppressingSpanWrapper clientSpansWrapper = clientSpanWrappers.get(instrumentationType);
     if (clientSpansWrapper == null) {
-      clientSpansWrapper = SuppressableSpan.suppressNestedIfSameType("client-" + instrumentationType);
+      clientSpansWrapper = SuppressingSpanWrapper.suppressNestedIfSameType("client-" + instrumentationType);
       clientSpanWrappers.put(instrumentationType, clientSpansWrapper);
     }
 
@@ -53,13 +53,13 @@ public class InstrumentationType {
     return IS_ENABLED;
   }
 
-  private final SuppressableSpan clientSpan;
+  private final SuppressingSpanWrapper clientSpan;
 
-  private InstrumentationType(SuppressableSpan clientSpan) {
+  private InstrumentationType(SuppressingSpanWrapper clientSpan) {
     this.clientSpan = clientSpan;
   }
 
-  SuppressableSpan getSpan(SpanKind spanKind) {
+  SuppressingSpanWrapper getSpanWrapper(SpanKind spanKind) {
     switch (spanKind) {
       case SERVER:
       case CONSUMER:

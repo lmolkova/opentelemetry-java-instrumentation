@@ -5,22 +5,22 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-interface SuppressableSpan {
-  static SuppressableSpan suppressNestedIfSameType(String type) {
+interface SuppressingSpanWrapper {
+  static SuppressingSpanWrapper suppressNestedIfSameType(String type) {
     return new SuppressIfSameType(type);
   }
 
-  static SuppressableSpan neverSuppress() {
+  static SuppressingSpanWrapper neverSuppress() {
     return new NeverSuppress();
   }
 
-  Context setSpanInContext(Context context, Span span);
+  Context setInContext(Context context, Span span);
 
   boolean hasMatchingSpan(Context context);
 
   @Nullable Span getMatchingSpanOrNull(Context context);
 
-  final class SuppressIfSameType implements SuppressableSpan {
+  final class SuppressIfSameType implements SuppressingSpanWrapper {
     private final ContextKey<Span> contextKey;
 
     public SuppressIfSameType(String type) {
@@ -28,7 +28,7 @@ interface SuppressableSpan {
     }
 
     @Override
-    public Context setSpanInContext(Context context, Span span) {
+    public Context setInContext(Context context, Span span) {
       return context.with(contextKey, span);
     }
 
@@ -43,9 +43,9 @@ interface SuppressableSpan {
     }
   }
 
-  final class NeverSuppress implements SuppressableSpan {
+  final class NeverSuppress implements SuppressingSpanWrapper {
     @Override
-    public Context setSpanInContext(Context context, Span span) {
+    public Context setInContext(Context context, Span span) {
       return context;
     }
 
