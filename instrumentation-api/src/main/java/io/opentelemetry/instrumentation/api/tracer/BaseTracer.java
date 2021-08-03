@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class BaseTracer {
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
+  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = new InstrumentationType("none");
 
   private final Tracer tracer;
   private final ContextPropagators propagators;
@@ -82,7 +83,7 @@ public abstract class BaseTracer {
   protected abstract String getInstrumentationName();
 
   protected InstrumentationType getInstrumentationType(){
-    return InstrumentationType.NONE;
+    return DISABLED_INSTRUMENTATION_TYPE;
   }
 
   /**

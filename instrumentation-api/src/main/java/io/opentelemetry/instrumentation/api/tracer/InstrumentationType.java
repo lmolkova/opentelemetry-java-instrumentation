@@ -21,7 +21,6 @@ public final class InstrumentationType {
   public static final InstrumentationType DB = new InstrumentationType("db");
   public static final InstrumentationType MESSAGING = new InstrumentationType("messaging");
   public static final InstrumentationType RPC = new InstrumentationType("rpc");
-  public static final InstrumentationType NONE = new InstrumentationType("any");
   public static final InstrumentationType GENERIC = new InstrumentationType("generic");
 
   private static final boolean IS_ENABLED = Config.get()

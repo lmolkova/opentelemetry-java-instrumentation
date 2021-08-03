@@ -32,6 +32,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
+  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = new InstrumentationType("none");
+
   final OpenTelemetry openTelemetry;
   final Meter meter;
   final String instrumentationName;
@@ -215,7 +217,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
     if (!InstrumentationType.isEnabled()) {
       // if not enabled, preserve current behavior, not distinguishing types
-      return InstrumentationType.NONE;
+      return DISABLED_INSTRUMENTATION_TYPE;
     }
 
     // instrumentation with no attributes or mixed attributes is custom

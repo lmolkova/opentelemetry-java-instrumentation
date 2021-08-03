@@ -386,9 +386,11 @@ class InstrumenterTest {
   }
 
   @Test
-  void clientNestedSpansSuppressedNoInstrumentationType() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(InstrumentationType.NONE);
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(InstrumentationType.NONE);
+  void clientNestedSpansSuppressedInstrumentationTypeDisabled() {
+    // this test depends on default config option for InstrumentationType
+
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter = getClientInstrumenter(null);
+    Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner = getClientInstrumenter(null);
 
     Map<String, String> request = new HashMap<>(REQUEST);
 
