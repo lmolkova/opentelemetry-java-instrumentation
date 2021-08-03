@@ -15,9 +15,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.InstrumentationVersion;
 import io.opentelemetry.instrumentation.api.internal.SupportabilityMetrics;
-import io.opentelemetry.instrumentation.api.tracer.ConsumerSpan;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
-import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
 import java.util.ArrayList;
 import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -101,20 +98,9 @@ public class Instrumenter<REQUEST, RESPONSE> {
    * without calling those methods.
    */
   public boolean shouldStart(Context parentContext, REQUEST request) {
-    boolean suppressed = false;
     SpanKind spanKind = spanKindExtractor.extract(request);
-    switch (spanKind) {
-      case SERVER:
-      case CONSUMER:
-        suppressed = ServerSpan.exists(parentContext) || ConsumerSpan.exists(parentContext);
-        break;
-      case CLIENT:
-      case PRODUCER:
-        suppressed = instrumentationType.hasMatchingSpan(parentContext);
-        break;
-      default:
-        break;
-    }
+    boolean suppressed = instrumentationType.getSpan(spanKind).hasMatchingSpan(parentContext);
+
     if (suppressed) {
       supportability.recordSuppressedSpan(spanKind, instrumentationName);
     }
@@ -159,16 +145,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
     spanBuilder.setAllAttributes(attributes);
     Span span = spanBuilder.startSpan();
     context = context.with(span);
-    switch (spanKind) {
-      case SERVER:
-        return ServerSpan.with(context, span);
-      case CLIENT:
-        return instrumentationType.setSpan(span, context);
-      case CONSUMER:
-        return ConsumerSpan.with(context, span);
-      default:
-        return context;
-    }
+    return instrumentationType.getSpan(spanKind).setSpanInContext(span, context);
   }
 
   /**

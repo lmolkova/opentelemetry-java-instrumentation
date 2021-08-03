@@ -21,7 +21,6 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.tracer.ServerSpan;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import io.opentelemetry.sdk.common.InstrumentationLibraryInfo;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.LinkData;

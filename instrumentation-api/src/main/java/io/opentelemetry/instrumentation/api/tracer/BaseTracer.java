@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class BaseTracer {
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
-  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = new InstrumentationType("none");
 
   private final Tracer tracer;
   private final ContextPropagators propagators;
@@ -82,10 +81,6 @@ public abstract class BaseTracer {
    */
   protected abstract String getInstrumentationName();
 
-  protected InstrumentationType getInstrumentationType(){
-    return DISABLED_INSTRUMENTATION_TYPE;
-  }
-
   /**
    * The version of the instrumentation library - defaults to the value of JAR manifest attribute
    * {@code Implementation-Version}.
@@ -109,7 +104,7 @@ public abstract class BaseTracer {
     boolean suppressed = false;
     switch (proposedKind) {
       case CLIENT:
-        suppressed = getInstrumentationType().hasMatchingSpan(context);
+        suppressed = ClientSpan.exists(context);
         break;
       case SERVER:
       case CONSUMER:
@@ -161,7 +156,7 @@ public abstract class BaseTracer {
    * @see #shouldStartSpan(Context, SpanKind)
    */
   protected final Context withClientSpan(Context parentContext, Span span) {
-    return getInstrumentationType().setSpan(span, parentContext.with(span));
+    return ClientSpan.with(parentContext.with(span), span);
   }
 
   /**

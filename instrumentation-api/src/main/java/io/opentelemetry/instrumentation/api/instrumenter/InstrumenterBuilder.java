@@ -21,7 +21,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtracto
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
-import io.opentelemetry.instrumentation.api.tracer.InstrumentationType;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -32,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
-  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = new InstrumentationType("none");
+  private static final InstrumentationType DISABLED_INSTRUMENTATION_TYPE = InstrumentationType.create("none");
 
   final OpenTelemetry openTelemetry;
   final Meter meter;
