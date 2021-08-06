@@ -17,13 +17,11 @@ import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A builder of {@link Instrumenter}. Instrumentation libraries should generally expose their own
@@ -48,7 +46,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
 
-  private InstrumentationType instrumentationType = null;
+  private boolean enableInstrumentationType = InstrumentationType.IS_ENABLED;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
@@ -127,8 +125,23 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return this;
   }
 
-  public InstrumenterBuilder<REQUEST, RESPONSE> setInstrumentationType(@NonNull InstrumentationType instrumentationType) {
-    this.instrumentationType = instrumentationType;
+  /**
+   * Enables {@link InstrumentationType} support and suppression:
+   *
+   * When enabled, suppresses nested spans:
+   * - CLIENT and PRODUCER nested spans are suppressed based on their type (HTTP, RPC, DB, MESSAGING)
+   *   i.e. if span with the same type is on the context, new span of this type will not be started.
+   *
+   * When disabled:
+   * - CLIENT and PRODUCER nested spans are always suppressed
+   *
+   * In both cases:
+   * - SERVER and PRODUCER nested spans are always suppressed
+   * - INTERNAL spans are never suppressed
+   */
+   // visible for tests
+  InstrumenterBuilder<REQUEST, RESPONSE> enableInstrumentationTypeSuppression(boolean enableInstrumentationType) {
+    this.enableInstrumentationType = enableInstrumentationType;
     return this;
   }
 
@@ -202,8 +215,9 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   }
 
   InstrumentationType getInstrumentationType() {
-    if (instrumentationType != null) {
-      return instrumentationType;
+    if (!enableInstrumentationType) {
+      // if not enabled, preserve current behavior, not distinguishing types
+      return InstrumentationType.NONE;
     }
 
     return typeFromAttributeExtractor(this.attributesExtractors);
@@ -211,25 +225,20 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
   private static InstrumentationType typeFromAttributeExtractor(
       List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
+    if (attributesExtractors != null) {
 
-    if (!Config.get().getBooleanProperty(InstrumentationType.ENABLE_INSTRUMENTATION_TYPE_SUPPRESSION_KEY, false)) {
-      // if not enabled, preserve current behavior, not distinguishing types
-      return InstrumentationType.NONE;
-    }
-
-    // instrumentation with no attributes or mixed attributes is custom
-    if (attributesExtractors != null && attributesExtractors.size() == 1) {
-
-      AttributesExtractor<?, ?> attributeExtractor = attributesExtractors.get(0);
-
-      if (attributeExtractor instanceof HttpAttributesExtractor) {
-        return InstrumentationType.HTTP;
-      } else if (attributeExtractor instanceof DbAttributesExtractor) {
-        return InstrumentationType.DB;
-      } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
-        return InstrumentationType.MESSAGING;
-      } else if (attributeExtractor instanceof RpcAttributesExtractor) {
-        return InstrumentationType.RPC;
+      // many instrumentations add multiple attribute extractors (e.g. http, net + custom),
+      // return first corresponding type found.
+      for (AttributesExtractor<?, ?> attributeExtractor : attributesExtractors) {
+        if (attributeExtractor instanceof HttpAttributesExtractor) {
+          return InstrumentationType.HTTP;
+        } else if (attributeExtractor instanceof RpcAttributesExtractor) {
+          return InstrumentationType.RPC;
+        } else if (attributeExtractor instanceof DbAttributesExtractor) {
+          return InstrumentationType.DB;
+        } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
+          return InstrumentationType.MESSAGING;
+        }
       }
     }
 
