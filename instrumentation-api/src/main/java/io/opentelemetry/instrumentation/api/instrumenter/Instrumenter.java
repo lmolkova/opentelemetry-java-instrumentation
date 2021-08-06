@@ -146,7 +146,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
     Span span = spanBuilder.startSpan();
     context = context.with(span);
 
-    return instrumentationType.getSpanWrapper(spanKind).setInContext(context, span);
+    return instrumentationType.getSpanWrapper(spanKind).storeInContext(context, span);
   }
 
   /**

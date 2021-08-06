@@ -5,7 +5,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-interface SuppressingSpanWrapper {
+abstract class SuppressingSpanWrapper {
   static SuppressingSpanWrapper suppressNestedIfSameType(String type) {
     return new SuppressIfSameType(type);
   }
@@ -14,49 +14,57 @@ interface SuppressingSpanWrapper {
     return new NeverSuppress();
   }
 
-  Context setInContext(Context context, Span span);
+  protected final ContextKey<Span> contextKey;
+  protected SuppressingSpanWrapper(ContextKey<Span> contextKey) {
+    this.contextKey = contextKey;
+  }
 
-  boolean hasMatchingSpan(Context context);
+  abstract Context storeInContext(Context context, Span span);
 
-  @Nullable Span getMatchingSpanOrNull(Context context);
+  boolean hasMatchingSpan(Context context) {
+    return fromContextOrNull(context) != null;
+  }
 
-  final class SuppressIfSameType implements SuppressingSpanWrapper {
-    private final ContextKey<Span> contextKey;
+  ContextKey<Span> getContextKey() { return contextKey; }
+
+  @Nullable abstract Span fromContextOrNull(Context context);
+
+  final static class SuppressIfSameType extends SuppressingSpanWrapper {
 
     public SuppressIfSameType(String type) {
-      this.contextKey = ContextKey.named("opentelemetry-traces-span-key-" + type);
+      super(ContextKey.named("opentelemetry-traces-span-key-" + type));
     }
 
     @Override
-    public Context setInContext(Context context, Span span) {
+    public Context storeInContext(Context context, Span span) {
       return context.with(contextKey, span);
     }
 
     @Override
-    public @Nullable Span getMatchingSpanOrNull(Context context){
+    public @Nullable Span fromContextOrNull(Context context){
       return context.get(contextKey);
-    }
-
-    @Override
-    public boolean hasMatchingSpan(Context context) {
-      return context.get(contextKey) != null;
     }
   }
 
-  final class NeverSuppress implements SuppressingSpanWrapper {
+  final static class NeverSuppress extends SuppressingSpanWrapper {
+    private final static String NEVER_SUPPRESS_KEY_NAME = "opentelemetry-traces-span-key-noop";
+    public NeverSuppress() {
+      super(ContextKey.named(NEVER_SUPPRESS_KEY_NAME));
+    }
+
     @Override
-    public Context setInContext(Context context, Span span) {
+    public Context storeInContext(Context context, Span span) {
       return context;
     }
 
     @Override
-    public @Nullable Span getMatchingSpanOrNull(Context context) {
-      return null;
-    }
+    public @Nullable Span fromContextOrNull(Context context) { return null; }
 
     @Override
-    public boolean hasMatchingSpan(Context context) {
-      return false;
+    ContextKey<Span> getContextKey() {
+      // reusing context key for never-suppress span would cause suppression
+      // in case it's being requested multiple times we'll return a new instance
+      return ContextKey.named(NEVER_SUPPRESS_KEY_NAME);
     }
   }
 }
