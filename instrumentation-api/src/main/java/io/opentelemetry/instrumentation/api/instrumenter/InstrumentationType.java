@@ -49,7 +49,7 @@ public class InstrumentationType {
   public static final InstrumentationType GENERIC = new InstrumentationType(SuppressingSpanWrapper.neverSuppress());
 
   /**
-   * Represents disabled instrumentation type. Used when {@link IS_INSTRUMENTATION_TYPE_ENABLED} is false.
+   * Represents disabled instrumentation type. Used when {@link IS_ENABLED} is false.
    */
   public static final InstrumentationType NONE = new InstrumentationType(SuppressingSpanWrapper.suppressNestedIfSameType("none"));
 
