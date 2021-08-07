@@ -18,7 +18,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public final class ClientSpan {
   // Keeps track of the client span in a subtree corresponding to a client request.
-  private static final ContextKey<Span> KEY =  InstrumentationType.NONE.clientContextKey();
+  private static final ContextKey<Span> KEY = InstrumentationType.NONE.clientContextKey();
 
   /** Returns true when a {@link SpanKind#CLIENT} span is present in the passed {@code context}. */
   public static boolean exists(Context context) {

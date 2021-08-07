@@ -10,17 +10,18 @@ import static java.util.Objects.requireNonNull;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -125,22 +126,34 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return this;
   }
 
+  // visible for tests
   /**
-   * Enables {@link InstrumentationType} support and suppression:
+   * Enables {@link InstrumentationType} support and suppression.
    *
-   * When enabled, suppresses nested spans:
-   * - CLIENT and PRODUCER nested spans are suppressed based on their type (HTTP, RPC, DB, MESSAGING)
-   *   i.e. if span with the same type is on the context, new span of this type will not be started.
+   * <p><strong>When enabled, suppresses nested spans depending on their {@link SpanKind} and
+   * type</strong>.
    *
-   * When disabled:
-   * - CLIENT and PRODUCER nested spans are always suppressed
+   * <ul>
+   *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are suppressed based
+   *       on their type (HTTP, RPC, DB, MESSAGING) i.e. if span with the same type is on the
+   *       context, new span of this type will not be started.
+   * </ul>
    *
-   * In both cases:
-   * - SERVER and PRODUCER nested spans are always suppressed
-   * - INTERNAL spans are never suppressed
+   * <p><strong>When disabled:</strong>
+   *
+   * <ul>
+   *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are always suppressed
+   * </ul>
+   *
+   * <p><strong>In both cases:</strong>
+   *
+   * <ul>
+   *   <li>{@link SpanKind.SERVER} and {@link SpanKind.CONSUMER} nested spans are always suppressed
+   *   <li>{@link SpanKind.INTERNAL} spans are never suppressed
+   * </ul>
    */
-   // visible for tests
-  InstrumenterBuilder<REQUEST, RESPONSE> enableInstrumentationTypeSuppression(boolean enableInstrumentationType) {
+  InstrumenterBuilder<REQUEST, RESPONSE> enableInstrumentationTypeSuppression(
+      boolean enableInstrumentationType) {
     this.enableInstrumentationType = enableInstrumentationType;
     return this;
   }

@@ -11,56 +11,68 @@ import io.opentelemetry.context.ContextKey;
 import io.opentelemetry.instrumentation.api.config.Config;
 
 /**
- * An instrumentation type that distinguishes spans within CLIENT or
- * PRODUCER kind as HTTP, DB, MESSAGING, RPC or GENERIC.
- * It is used to suppress multiple instrumentation layers of the same type and
- * to find and enrich spans of certain type in the current context.
+ * An instrumentation type that distinguishes spans within CLIENT or PRODUCER kind as HTTP, DB,
+ * MESSAGING, RPC or GENERIC. It is used to suppress multiple instrumentation layers of the same
+ * type and to find and enrich spans of certain type in the current context.
  *
- * - CLIENT and PRODUCER nested spans are suppressed based on their type
- *   - GENERIC type spans are never suppressed.
- * - INTERNAL spans are never suppressed
- * - SERVER or CONSUMER nested spans are suppressed regardless of type.
+ * <p>
+ *
+ * <ul>
+ *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are suppressed based on
+ *       their type
+ *       <ul>
+ *         <li>GENERIC type spans are never suppressed.
+ *       </ul>
+ *   <li>{@link SpanKind.INTERNAL} spans are never suppressed
+ *   <li>{@link SpanKind.SERVER} or {@link SpanKind.CONSUMER} nested spans are suppressed regardless
+ *       of type.
+ * </ul>
  */
 public class InstrumentationType {
   /**
-   * Represents HTTP instrumentation type. Client or producer nested HTTP spans are suppressed.
+   * Represents HTTP instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
+   * nested HTTP spans are suppressed.
    */
   public static final InstrumentationType HTTP = new InstrumentationType("http");
 
-  /**
-   * Represents DB instrumentation type. Client nested DB spans are suppressed.
-   */
+  /** Represents DB instrumentation type. {@link SpanKind.CLIENT} nested DB spans are suppressed. */
   public static final InstrumentationType DB = new InstrumentationType("db");
 
   /**
-   * Represents MESSAGING instrumentation type. Client or producer nested MESSAGING spans are suppressed.
+   * Represents MESSAGING instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
+   * nested MESSAGING spans are suppressed.
    */
   public static final InstrumentationType MESSAGING = new InstrumentationType("messaging");
 
   /**
-   * Represents RPC instrumentation type. Client or producer nested RPC spans are suppressed.
+   * Represents RPC instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
+   * nested RPC spans are suppressed.
    */
   public static final InstrumentationType RPC = new InstrumentationType("rpc");
 
   /**
    * Represents GENERIC instrumentation type. GENERIC spans are never suppressed. Used by default if
-   * instrumentation type is enabled, and {@link InstrumenterBuilder} could not detect specific instrumentation type.
+   * instrumentation type is enabled, and {@link InstrumenterBuilder} could not detect specific
+   * instrumentation type.
    */
-  public static final InstrumentationType GENERIC = new InstrumentationType(SuppressingSpanWrapper.neverSuppress());
+  public static final InstrumentationType GENERIC =
+      new InstrumentationType(SuppressingSpanWrapper.neverSuppress());
 
-  /**
-   * Represents disabled instrumentation type. Used when {@link IS_ENABLED} is false.
-   */
-  public static final InstrumentationType NONE = new InstrumentationType(SuppressingSpanWrapper.suppressNestedIfSameType("none"));
+  /** Represents disabled instrumentation type. Used when {@link IS_ENABLED} is false. */
+  public static final InstrumentationType NONE =
+      new InstrumentationType(SuppressingSpanWrapper.suppressNestedIfSameType("none"));
 
-  /**
-   * Instrumentation type suppression configuration property key.
-   */
-  static final boolean IS_ENABLED = Config.get().getBooleanProperty("otel.instrumentation.experimental.span-suppression-by-type", false);
+  /** Instrumentation type suppression configuration property key. */
+  static final boolean IS_ENABLED =
+      Config.get()
+          .getBooleanProperty("otel.instrumentation.experimental.span-suppression-by-type", false);
 
-  private static final SuppressingSpanWrapper INTERNAL_SPAN = SuppressingSpanWrapper.neverSuppress();
-  private static final SuppressingSpanWrapper SERVER_SPAN = SuppressingSpanWrapper.suppressNestedIfSameType("server");
-  private static final SuppressingSpanWrapper CONSUMER_SPAN = SuppressingSpanWrapper.suppressNestedIfSameType("consumer");
+  private static final SuppressingSpanWrapper INTERNAL_SPAN =
+      SuppressingSpanWrapper.neverSuppress();
+  private static final SuppressingSpanWrapper SERVER_SPAN =
+      SuppressingSpanWrapper.suppressNestedIfSameType("server");
+  private static final SuppressingSpanWrapper CONSUMER_SPAN =
+      SuppressingSpanWrapper.suppressNestedIfSameType("consumer");
 
   private final SuppressingSpanWrapper clientSpan;
 
@@ -73,28 +85,30 @@ public class InstrumentationType {
   }
 
   /**
-   * Returns CLIENT span context key for the type. Use it to unambiguously identify span of certain type
-   * to enrich.
+   * Returns {@link SpanKind.CLIENT} span context key for the type. Use it to unambiguously identify
+   * span of certain type to enrich.
    *
-   * @return {@link ContextKey} for CLIENT span of given type.
+   * @return {@link ContextKey} for {@link SpanKind.CLIENT} span of given type.
    */
   public ContextKey<Span> clientContextKey() {
     return clientSpan.getContextKey();
   }
 
   /**
-   * Returns SERVER span context key. Use it to enrich SERVER spans.
+   * Returns {@link SpanKind.SERVER} span context key. Use it to enrich {@link SpanKind.SERVER}
+   * spans.
    *
-   * @return {@link ContextKey} for SERVER span.
+   * @return {@link ContextKey} for {@link SpanKind.SERVER} span.
    */
   public ContextKey<Span> serverContextKey() {
     return SERVER_SPAN.getContextKey();
   }
 
   /**
-   * Returns CONSUMER span context key. Use it to enrich CONSUMER spans.
+   * Returns {@link SpanKind.CONSUMER} span context key. Use it to enrich {@link SpanKind.CONSUMER}
+   * spans.
    *
-   * @return {@link ContextKey} for CONSUMER span.
+   * @return {@link ContextKey} for {@link SpanKind.CONSUMER} span.
    */
   public ContextKey<Span> consumerContextKey() {
     return CONSUMER_SPAN.getContextKey();

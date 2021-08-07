@@ -1,3 +1,8 @@
+/*
+ * Copyright The OpenTelemetry Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package io.opentelemetry.instrumentation.api.instrumenter;
 
 import io.opentelemetry.api.trace.Span;
@@ -15,6 +20,7 @@ abstract class SuppressingSpanWrapper {
   }
 
   protected final ContextKey<Span> contextKey;
+
   protected SuppressingSpanWrapper(ContextKey<Span> contextKey) {
     this.contextKey = contextKey;
   }
@@ -25,12 +31,14 @@ abstract class SuppressingSpanWrapper {
     return fromContextOrNull(context) != null;
   }
 
-  ContextKey<Span> getContextKey() { return contextKey; }
+  ContextKey<Span> getContextKey() {
+    return contextKey;
+  }
 
-  @Nullable abstract Span fromContextOrNull(Context context);
+  @Nullable
+  abstract Span fromContextOrNull(Context context);
 
-  final static class SuppressIfSameType extends SuppressingSpanWrapper {
-
+  static final class SuppressIfSameType extends SuppressingSpanWrapper {
     public SuppressIfSameType(String type) {
       super(ContextKey.named("opentelemetry-traces-span-key-" + type));
     }
@@ -41,24 +49,30 @@ abstract class SuppressingSpanWrapper {
     }
 
     @Override
-    public @Nullable Span fromContextOrNull(Context context){
+    public @Nullable Span fromContextOrNull(Context context) {
+
       return context.get(contextKey);
     }
   }
 
-  final static class NeverSuppress extends SuppressingSpanWrapper {
-    private final static String NEVER_SUPPRESS_KEY_NAME = "opentelemetry-traces-span-key-noop";
+  static final class NeverSuppress extends SuppressingSpanWrapper {
+    private static final String NEVER_SUPPRESS_KEY_NAME = "opentelemetry-traces-span-key-noop";
+
     public NeverSuppress() {
+
       super(ContextKey.named(NEVER_SUPPRESS_KEY_NAME));
     }
 
     @Override
     public Context storeInContext(Context context, Span span) {
+
       return context;
     }
 
     @Override
-    public @Nullable Span fromContextOrNull(Context context) { return null; }
+    public @Nullable Span fromContextOrNull(Context context) {
+      return null;
+    }
 
     @Override
     ContextKey<Span> getContextKey() {
@@ -68,4 +82,3 @@ abstract class SuppressingSpanWrapper {
     }
   }
 }
-
