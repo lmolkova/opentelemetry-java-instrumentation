@@ -147,7 +147,7 @@ public class InstrumentationTypeTests {
   @EnumSource(
       value = SpanKind.class,
       names = {"CLIENT", "PRODUCER"})
-  public void clientSpan_GENERIC_neverHasMatchingSpan(SpanKind kind) {
+  public void clientSpan_generic_neverHasMatchingSpan(SpanKind kind) {
     Context context =
         InstrumentationType.GENERIC.spanWrapper(kind).storeInContext(Context.root(), SPAN);
 

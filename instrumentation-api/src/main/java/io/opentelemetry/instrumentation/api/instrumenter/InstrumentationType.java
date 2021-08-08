@@ -15,39 +15,29 @@ import io.opentelemetry.instrumentation.api.config.Config;
  * MESSAGING, RPC or GENERIC. It is used to suppress multiple instrumentation layers of the same
  * type and to find and enrich spans of certain type in the current context.
  *
- * <p>
- *
  * <ul>
- *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are suppressed based on
- *       their type
+ *   <li>CLIENT and PRODUCER nested spans are suppressed based on their type
  *       <ul>
  *         <li>GENERIC type spans are never suppressed.
  *       </ul>
- *   <li>{@link SpanKind.INTERNAL} spans are never suppressed
- *   <li>{@link SpanKind.SERVER} or {@link SpanKind.CONSUMER} nested spans are suppressed regardless
- *       of type.
+ *   <li>INTERNAL spans are never suppressed
+ *   <li>SERVER or CONSUMER nested spans are suppressed regardless of type.
  * </ul>
  */
 public class InstrumentationType {
-  /**
-   * Represents HTTP instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
-   * nested HTTP spans are suppressed.
-   */
+  /** Represents HTTP instrumentation type. Nested CLIENT or PRODUCER HTTP spans are suppressed. */
   public static final InstrumentationType HTTP = new InstrumentationType("http");
 
-  /** Represents DB instrumentation type. {@link SpanKind.CLIENT} nested DB spans are suppressed. */
+  /** Represents DB instrumentation type. Nested DB spans are suppressed. */
   public static final InstrumentationType DB = new InstrumentationType("db");
 
   /**
-   * Represents MESSAGING instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
-   * nested MESSAGING spans are suppressed.
+   * Represents MESSAGING instrumentation type. Nested CLIENT or PRODUCER MESSAGING spans are
+   * suppressed.
    */
   public static final InstrumentationType MESSAGING = new InstrumentationType("messaging");
 
-  /**
-   * Represents RPC instrumentation type. {@link SpanKind.CLIENT} or {@link SpanKind.PRODUCER}
-   * nested RPC spans are suppressed.
-   */
+  /** Represents RPC instrumentation type. Nested CLIENT or PRODUCER RPC spans are suppressed. */
   public static final InstrumentationType RPC = new InstrumentationType("rpc");
 
   /**
@@ -85,30 +75,28 @@ public class InstrumentationType {
   }
 
   /**
-   * Returns {@link SpanKind.CLIENT} span context key for the type. Use it to unambiguously identify
-   * span of certain type to enrich.
+   * Returns CLIENT span context key for the type. Use it to unambiguously identify span of certain
+   * type to enrich.
    *
-   * @return {@link ContextKey} for {@link SpanKind.CLIENT} span of given type.
+   * @return {@link ContextKey} for CLIENT span of given type.
    */
   public ContextKey<Span> clientContextKey() {
     return clientSpan.getContextKey();
   }
 
   /**
-   * Returns {@link SpanKind.SERVER} span context key. Use it to enrich {@link SpanKind.SERVER}
-   * spans.
+   * Returns SERVER span context key. Use it to enrich SERVER spans.
    *
-   * @return {@link ContextKey} for {@link SpanKind.SERVER} span.
+   * @return {@link ContextKey} for SERVER span.
    */
   public ContextKey<Span> serverContextKey() {
     return SERVER_SPAN.getContextKey();
   }
 
   /**
-   * Returns {@link SpanKind.CONSUMER} span context key. Use it to enrich {@link SpanKind.CONSUMER}
-   * spans.
+   * Returns CONSUMER span context key. Use it to enrich CONSUMER spans.
    *
-   * @return {@link ContextKey} for {@link SpanKind.CONSUMER} span.
+   * @return {@link ContextKey} for CONSUMER span.
    */
   public ContextKey<Span> consumerContextKey() {
     return CONSUMER_SPAN.getContextKey();

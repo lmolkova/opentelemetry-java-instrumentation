@@ -134,22 +134,22 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
    * type</strong>.
    *
    * <ul>
-   *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are suppressed based
-   *       on their type (HTTP, RPC, DB, MESSAGING) i.e. if span with the same type is on the
-   *       context, new span of this type will not be started.
+   *   <li>CLIENT and PRODUCER nested spans are suppressed based on their type (HTTP, RPC, DB,
+   *       MESSAGING) i.e. if span with the same type is on the context, new span of this type will
+   *       not be started.
    * </ul>
    *
    * <p><strong>When disabled:</strong>
    *
    * <ul>
-   *   <li>{@link SpanKind.CLIENT} and {@link SpanKind.PRODUCER} nested spans are always suppressed
+   *   <li>CLIENT and PRODUCER nested spans are always suppressed
    * </ul>
    *
    * <p><strong>In both cases:</strong>
    *
    * <ul>
-   *   <li>{@link SpanKind.SERVER} and {@link SpanKind.CONSUMER} nested spans are always suppressed
-   *   <li>{@link SpanKind.INTERNAL} spans are never suppressed
+   *   <li>SERVER and CONSUMER nested spans are always suppressed
+   *   <li>INTERNAL spans are never suppressed
    * </ul>
    */
   InstrumenterBuilder<REQUEST, RESPONSE> enableInstrumentationTypeSuppression(
