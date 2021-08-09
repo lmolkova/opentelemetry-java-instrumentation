@@ -5,6 +5,7 @@
 
 package io.opentelemetry.instrumentation.api.instrumenter;
 
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -238,7 +239,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   SpanSuppressionStrategy getSpanSuppressionStrategy() {
     if (!enableSpanSuppressionByType) {
       // if not enabled, preserve current behavior, not distinguishing types
-      return SpanSuppressionStrategy.from(SpanKey.OUTGOING);
+      return SpanSuppressionStrategy.from(singletonList(SpanKey.OUTGOING));
     }
 
     List<SpanKey> spanKeys = spanKeysFromAttributeExtractor(this.attributesExtractors);
