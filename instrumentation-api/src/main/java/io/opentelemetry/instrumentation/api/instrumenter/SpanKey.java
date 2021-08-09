@@ -27,7 +27,7 @@ public class SpanKey {
   private static final ContextKey<Span> DB_KEY =
       ContextKey.named("opentelemetry-traces-span-key-db");
   private static final ContextKey<Span> MESSAGING_KEY =
-      ContextKey.named("opentelemetry-traces-span-key-db");
+      ContextKey.named("opentelemetry-traces-span-key-messaging");
 
   // this is used instead of above, depending on the configuration value for
   // otel.instrumentation.experimental.span-suppression-by-type
