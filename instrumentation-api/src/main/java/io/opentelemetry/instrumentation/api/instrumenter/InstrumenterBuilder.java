@@ -15,6 +15,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.annotations.UnstableApi;
+import io.opentelemetry.instrumentation.api.config.Config;
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
@@ -30,6 +31,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * {@link Instrumenter}.
  */
 public final class InstrumenterBuilder<REQUEST, RESPONSE> {
+
+  // TODO move this constant out of api and only use system property from javaagent?
+  /** Instrumentation type suppression configuration property key. */
+  private static final boolean ENABLE_SPAN_SUPPRESSION_BY_TYPE =
+      Config.get()
+          .getBooleanProperty("otel.instrumentation.experimental.span-suppression-by-type", false);
+
   final OpenTelemetry openTelemetry;
   final Meter meter;
   final String instrumentationName;
@@ -47,7 +55,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
   @Nullable StartTimeExtractor<REQUEST> startTimeExtractor = null;
   @Nullable EndTimeExtractor<RESPONSE> endTimeExtractor = null;
 
-  private boolean enableInstrumentationType = InstrumentationType.IS_ENABLED;
+  private boolean enableSpanSuppressionByType = ENABLE_SPAN_SUPPRESSION_BY_TYPE;
 
   InstrumenterBuilder(
       OpenTelemetry openTelemetry,
@@ -154,7 +162,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
    */
   InstrumenterBuilder<REQUEST, RESPONSE> enableInstrumentationTypeSuppression(
       boolean enableInstrumentationType) {
-    this.enableInstrumentationType = enableInstrumentationType;
+    this.enableSpanSuppressionByType = enableInstrumentationType;
     return this;
   }
 
@@ -227,35 +235,38 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
     return constructor.create(this);
   }
 
-  InstrumentationType getInstrumentationType() {
-    if (!enableInstrumentationType) {
+  SpanSuppressionStrategy getSpanSuppressionStrategy() {
+    if (!enableSpanSuppressionByType) {
       // if not enabled, preserve current behavior, not distinguishing types
-      return InstrumentationType.NONE;
+      return SpanSuppressionStrategy.from(SpanKey.OUTGOING);
     }
 
-    return typeFromAttributeExtractor(this.attributesExtractors);
+    SpanKey spanKey = spanKeyFromAttributeExtractor(this.attributesExtractors);
+    if (spanKey == null) {
+      return SpanSuppressionStrategy.neverSuppress();
+    } else {
+      return SpanSuppressionStrategy.from(spanKey);
+    }
   }
 
-  private static InstrumentationType typeFromAttributeExtractor(
+  @Nullable
+  private static SpanKey spanKeyFromAttributeExtractor(
       List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
-    if (attributesExtractors != null) {
 
-      // many instrumentations add multiple attribute extractors (e.g. http, net + custom),
-      // return first corresponding type found.
-      for (AttributesExtractor<?, ?> attributeExtractor : attributesExtractors) {
-        if (attributeExtractor instanceof HttpAttributesExtractor) {
-          return InstrumentationType.HTTP;
-        } else if (attributeExtractor instanceof RpcAttributesExtractor) {
-          return InstrumentationType.RPC;
-        } else if (attributeExtractor instanceof DbAttributesExtractor) {
-          return InstrumentationType.DB;
-        } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
-          return InstrumentationType.MESSAGING;
-        }
+    // many instrumentations add multiple attribute extractors (e.g. http, net + custom),
+    // return first corresponding type found.
+    for (AttributesExtractor<?, ?> attributeExtractor : attributesExtractors) {
+      if (attributeExtractor instanceof HttpAttributesExtractor) {
+        return SpanKey.HTTP;
+      } else if (attributeExtractor instanceof RpcAttributesExtractor) {
+        return SpanKey.RPC;
+      } else if (attributeExtractor instanceof DbAttributesExtractor) {
+        return SpanKey.DB;
+      } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
+        return SpanKey.MESSAGING;
       }
     }
-
-    return InstrumentationType.GENERIC;
+    return null;
   }
 
   private interface InstrumenterConstructor<RQ, RS> {

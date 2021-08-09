@@ -62,7 +62,6 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private static final SupportabilityMetrics supportability = SupportabilityMetrics.instance();
 
   private final String instrumentationName;
-  private final InstrumentationType instrumentationType;
   private final Tracer tracer;
   private final SpanNameExtractor<? super REQUEST> spanNameExtractor;
   private final SpanKindExtractor<? super REQUEST> spanKindExtractor;
@@ -74,6 +73,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
   private final ErrorCauseExtractor errorCauseExtractor;
   @Nullable private final StartTimeExtractor<REQUEST> startTimeExtractor;
   @Nullable private final EndTimeExtractor<RESPONSE> endTimeExtractor;
+  private final SpanSuppressionStrategy spanSuppressionStrategy;
 
   Instrumenter(InstrumenterBuilder<REQUEST, RESPONSE> builder) {
     this.instrumentationName = builder.instrumentationName;
@@ -88,7 +88,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
     this.errorCauseExtractor = builder.errorCauseExtractor;
     this.startTimeExtractor = builder.startTimeExtractor;
     this.endTimeExtractor = builder.endTimeExtractor;
-    this.instrumentationType = builder.getInstrumentationType();
+    this.spanSuppressionStrategy = builder.getSpanSuppressionStrategy();
   }
 
   /**
@@ -99,7 +99,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
    */
   public boolean shouldStart(Context parentContext, REQUEST request) {
     SpanKind spanKind = spanKindExtractor.extract(request);
-    boolean suppressed = instrumentationType.spanWrapper(spanKind).hasMatchingSpan(parentContext);
+    boolean suppressed = spanSuppressionStrategy.shouldSuppress(spanKind, parentContext);
 
     if (suppressed) {
       supportability.recordSuppressedSpan(spanKind, instrumentationName);
@@ -146,7 +146,7 @@ public class Instrumenter<REQUEST, RESPONSE> {
     Span span = spanBuilder.startSpan();
     context = context.with(span);
 
-    return instrumentationType.spanWrapper(spanKind).storeInContext(context, span);
+    return spanSuppressionStrategy.storeInContext(spanKind, context, span);
   }
 
   /**
