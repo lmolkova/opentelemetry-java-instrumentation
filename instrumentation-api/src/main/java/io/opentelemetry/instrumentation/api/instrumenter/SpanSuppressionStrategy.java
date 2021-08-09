@@ -8,15 +8,15 @@ package io.opentelemetry.instrumentation.api.instrumenter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
+import java.util.List;
 
 abstract class SpanSuppressionStrategy {
 
-  static SpanSuppressionStrategy from(SpanKey spanKey) {
-    return new SuppressIfSameType(spanKey);
-  }
-
-  static SpanSuppressionStrategy neverSuppress() {
-    return NeverSuppress.INSTANCE;
+  static SpanSuppressionStrategy from(List<SpanKey> spanKeys) {
+    if (spanKeys.isEmpty()) {
+      return NeverSuppress.INSTANCE;
+    }
+    return new SuppressIfSameType(spanKeys);
   }
 
   abstract Context storeInContext(SpanKind spanKind, Context context, Span span);
@@ -25,10 +25,10 @@ abstract class SpanSuppressionStrategy {
 
   static final class SuppressIfSameType extends SpanSuppressionStrategy {
 
-    private final SpanKey outgoingSpanKey;
+    private final List<SpanKey> outgoingSpanKeys;
 
-    SuppressIfSameType(SpanKey outgoingSpanKey) {
-      this.outgoingSpanKey = outgoingSpanKey;
+    SuppressIfSameType(List<SpanKey> outgoingSpanKeys) {
+      this.outgoingSpanKeys = outgoingSpanKeys;
     }
 
     @Override
@@ -36,7 +36,10 @@ abstract class SpanSuppressionStrategy {
       switch (spanKind) {
         case CLIENT:
         case PRODUCER:
-          return outgoingSpanKey.with(context, span);
+          for (SpanKey outgoingSpanKey : outgoingSpanKeys) {
+            context = outgoingSpanKey.with(context, span);
+          }
+          return context;
         case SERVER:
           return SpanKey.SERVER.with(context, span);
         case CONSUMER:
@@ -52,7 +55,12 @@ abstract class SpanSuppressionStrategy {
       switch (spanKind) {
         case CLIENT:
         case PRODUCER:
-          return outgoingSpanKey.fromContextOrNull(parentContext) != null;
+          for (SpanKey outgoingSpanKey : outgoingSpanKeys) {
+            if (outgoingSpanKey.fromContextOrNull(parentContext) == null) {
+              return false;
+            }
+          }
+          return true;
         case SERVER:
           return SpanKey.SERVER.fromContextOrNull(parentContext) != null;
         case CONSUMER:

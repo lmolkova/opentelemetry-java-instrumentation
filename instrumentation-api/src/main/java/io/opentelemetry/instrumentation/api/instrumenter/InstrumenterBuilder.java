@@ -241,32 +241,26 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
       return SpanSuppressionStrategy.from(SpanKey.OUTGOING);
     }
 
-    SpanKey spanKey = spanKeyFromAttributeExtractor(this.attributesExtractors);
-    if (spanKey == null) {
-      return SpanSuppressionStrategy.neverSuppress();
-    } else {
-      return SpanSuppressionStrategy.from(spanKey);
-    }
+    List<SpanKey> spanKeys = spanKeysFromAttributeExtractor(this.attributesExtractors);
+    return SpanSuppressionStrategy.from(spanKeys);
   }
 
-  @Nullable
-  private static SpanKey spanKeyFromAttributeExtractor(
+  private static List<SpanKey> spanKeysFromAttributeExtractor(
       List<? extends AttributesExtractor<?, ?>> attributesExtractors) {
 
-    // many instrumentations add multiple attribute extractors (e.g. http, net + custom),
-    // return first corresponding type found.
+    List<SpanKey> spanKeys = new ArrayList<>();
     for (AttributesExtractor<?, ?> attributeExtractor : attributesExtractors) {
       if (attributeExtractor instanceof HttpAttributesExtractor) {
-        return SpanKey.HTTP;
+        spanKeys.add(SpanKey.HTTP);
       } else if (attributeExtractor instanceof RpcAttributesExtractor) {
-        return SpanKey.RPC;
+        spanKeys.add(SpanKey.RPC);
       } else if (attributeExtractor instanceof DbAttributesExtractor) {
-        return SpanKey.DB;
+        spanKeys.add(SpanKey.DB);
       } else if (attributeExtractor instanceof MessagingAttributesExtractor) {
-        return SpanKey.MESSAGING;
+        spanKeys.add(SpanKey.MESSAGING);
       }
     }
-    return null;
+    return spanKeys;
   }
 
   private interface InstrumenterConstructor<RQ, RS> {
