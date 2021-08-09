@@ -152,10 +152,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-
-    Span serverKeySpan =
-        InstrumentationType.NONE.spanWrapper(SpanKind.SERVER).fromContextOrNull(context);
-    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
 
@@ -198,10 +195,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-
-    Span serverKeySpan =
-        InstrumentationType.NONE.spanWrapper(SpanKind.SERVER).fromContextOrNull(context);
-    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, new IllegalStateException("test"));
 
@@ -238,10 +232,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-
-    Span serverKeySpan =
-        InstrumentationType.NONE.spanWrapper(SpanKind.SERVER).fromContextOrNull(context);
-    assertThat(serverKeySpan.getSpanContext()).isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);
 
@@ -277,12 +268,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(
-            InstrumentationType.NONE
-                .spanWrapper(SpanKind.SERVER)
-                .fromContextOrNull(context)
-                .getSpanContext())
-        .isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
 
@@ -325,12 +311,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(
-            InstrumentationType.NONE
-                .spanWrapper(SpanKind.SERVER)
-                .fromContextOrNull(context)
-                .getSpanContext())
-        .isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);
 
@@ -372,12 +353,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
-    assertThat(
-            InstrumentationType.NONE
-                .spanWrapper(SpanKind.SERVER)
-                .fromContextOrNull(context)
-                .getSpanContext())
-        .isEqualTo(spanContext);
+    assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, request, RESPONSE, null);
 
@@ -858,7 +834,7 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
-    validateInstrumentationTypeSpanPresent(InstrumentationType.HTTP, context);
+    validateInstrumentationTypeSpanPresent(SpanKey.HTTP, context);
   }
 
   @Test
@@ -869,7 +845,7 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
-    validateInstrumentationTypeSpanPresent(InstrumentationType.DB, context);
+    validateInstrumentationTypeSpanPresent(SpanKey.DB, context);
   }
 
   @Test
@@ -880,7 +856,7 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
-    validateInstrumentationTypeSpanPresent(InstrumentationType.RPC, context);
+    validateInstrumentationTypeSpanPresent(SpanKey.RPC, context);
   }
 
   @Test
@@ -891,7 +867,7 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
-    validateInstrumentationTypeSpanPresent(InstrumentationType.MESSAGING, context);
+    validateInstrumentationTypeSpanPresent(SpanKey.MESSAGING, context);
   }
 
   @Test
@@ -907,7 +883,7 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
-    validateInstrumentationTypeSpanPresent(InstrumentationType.MESSAGING, context);
+    validateInstrumentationTypeSpanPresent(SpanKey.MESSAGING, context);
   }
 
   @Test
@@ -922,25 +898,17 @@ class InstrumenterTest {
 
     assertThat(span).isNotNull();
 
-    // GENERIC span is never stored under the type  context key
-    assertThat(context.get(InstrumentationType.GENERIC.clientContextKey())).isNull();
-    assertThat(InstrumentationType.GENERIC.spanWrapper(SpanKind.CLIENT).fromContextOrNull(context))
-        .isNull();
-
-    assertThat(context.get(InstrumentationType.HTTP.clientContextKey())).isNull();
-    assertThat(context.get(InstrumentationType.DB.clientContextKey())).isNull();
-    assertThat(context.get(InstrumentationType.RPC.clientContextKey())).isNull();
-    assertThat(context.get(InstrumentationType.MESSAGING.clientContextKey())).isNull();
-    assertThat(context.get(InstrumentationType.NONE.clientContextKey())).isNull();
+    assertThat(SpanKey.HTTP.fromContextOrNull(context)).isNull();
+    assertThat(SpanKey.DB.fromContextOrNull(context)).isNull();
+    assertThat(SpanKey.RPC.fromContextOrNull(context)).isNull();
+    assertThat(SpanKey.MESSAGING.fromContextOrNull(context)).isNull();
   }
 
-  private static void validateInstrumentationTypeSpanPresent(
-      InstrumentationType type, Context context) {
+  private static void validateInstrumentationTypeSpanPresent(SpanKey spanKey, Context context) {
     Span span = Span.fromContext(context);
 
     assertThat(span).isNotNull();
-    assertThat(context.get(type.clientContextKey())).isSameAs(span);
-    assertThat(type.spanWrapper(SpanKind.CLIENT).fromContextOrNull(context)).isSameAs(span);
+    assertThat(spanKey.fromContextOrNull(context)).isSameAs(span);
   }
 
   private static Instrumenter<Map<String, String>, Map<String, String>> getInstrumenterWithType(

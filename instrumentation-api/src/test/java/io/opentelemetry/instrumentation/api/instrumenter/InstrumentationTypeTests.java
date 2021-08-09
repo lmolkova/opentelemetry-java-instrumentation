@@ -29,15 +29,14 @@ public class InstrumentationTypeTests {
         InstrumentationType.NONE.spanWrapper(kind).storeInContext(Context.root(), SPAN);
 
     allInstrumentationTypes()
-        .forEach(type -> assertThat(type.spanWrapper(kind).hasMatchingSpan(context)).isTrue());
+        .forEach(type -> assertThat(type.spanWrapper(kind).suppressSpan(context)).isTrue());
     allInstrumentationTypes()
         .forEach(
             type -> assertThat(type.spanWrapper(kind).fromContextOrNull(context)).isSameAs(SPAN));
 
     allInstrumentationTypes()
         .forEach(
-            type ->
-                assertThat(type.spanWrapper(SpanKind.CLIENT).hasMatchingSpan(context)).isFalse());
+            type -> assertThat(type.spanWrapper(SpanKind.CLIENT).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .forEach(
             type ->
@@ -46,7 +45,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .forEach(
             type ->
-                assertThat(type.spanWrapper(SpanKind.PRODUCER).hasMatchingSpan(context)).isFalse());
+                assertThat(type.spanWrapper(SpanKind.PRODUCER).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .forEach(
             type ->
@@ -56,7 +55,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .forEach(
             type ->
-                assertThat(type.spanWrapper(SpanKind.INTERNAL).hasMatchingSpan(context)).isFalse());
+                assertThat(type.spanWrapper(SpanKind.INTERNAL).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .forEach(
             type ->
@@ -76,7 +75,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .forEach(
             type ->
-                assertThat(type.spanWrapper(SpanKind.CONSUMER).hasMatchingSpan(contextServer))
+                assertThat(type.spanWrapper(SpanKind.CONSUMER).suppressSpan(contextServer))
                     .isFalse());
     allInstrumentationTypes()
         .forEach(
@@ -87,7 +86,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .forEach(
             type ->
-                assertThat(type.spanWrapper(SpanKind.SERVER).hasMatchingSpan(contextConsumer))
+                assertThat(type.spanWrapper(SpanKind.SERVER).suppressSpan(contextConsumer))
                     .isFalse());
     allInstrumentationTypes()
         .forEach(
@@ -103,8 +102,7 @@ public class InstrumentationTypeTests {
         instrumentationType.spanWrapper(SpanKind.CLIENT).storeInContext(Context.root(), SPAN);
 
     if (instrumentationType != InstrumentationType.GENERIC) {
-      assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).hasMatchingSpan(context))
-          .isTrue();
+      assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).suppressSpan(context)).isTrue();
       assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).fromContextOrNull(context))
           .isNotNull();
     }
@@ -112,8 +110,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .filter(type -> type != instrumentationType)
         .forEach(
-            type ->
-                assertThat(type.spanWrapper(SpanKind.CLIENT).hasMatchingSpan(context)).isFalse());
+            type -> assertThat(type.spanWrapper(SpanKind.CLIENT).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .filter(type -> type != instrumentationType)
         .forEach(
@@ -133,11 +130,11 @@ public class InstrumentationTypeTests {
       return;
     }
 
-    assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).hasMatchingSpan(contextProducer))
+    assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).suppressSpan(contextProducer))
         .isTrue();
     assertThat(instrumentationType.spanWrapper(SpanKind.CLIENT).fromContextOrNull(contextProducer))
         .isSameAs(SPAN);
-    assertThat(instrumentationType.spanWrapper(SpanKind.PRODUCER).hasMatchingSpan(contextClient))
+    assertThat(instrumentationType.spanWrapper(SpanKind.PRODUCER).suppressSpan(contextClient))
         .isTrue();
     assertThat(instrumentationType.spanWrapper(SpanKind.PRODUCER).fromContextOrNull(contextClient))
         .isSameAs(SPAN);
@@ -152,7 +149,7 @@ public class InstrumentationTypeTests {
         InstrumentationType.GENERIC.spanWrapper(kind).storeInContext(Context.root(), SPAN);
 
     allInstrumentationTypes()
-        .forEach(type -> assertThat(type.spanWrapper(kind).hasMatchingSpan(context)).isFalse());
+        .forEach(type -> assertThat(type.spanWrapper(kind).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .forEach(type -> assertThat(type.spanWrapper(kind).fromContextOrNull(context)).isNull());
   }
@@ -167,7 +164,7 @@ public class InstrumentationTypeTests {
     allInstrumentationTypes()
         .forEach(
             type ->
-                assertThat(type.spanWrapper(SpanKind.INTERNAL).hasMatchingSpan(context)).isFalse());
+                assertThat(type.spanWrapper(SpanKind.INTERNAL).suppressSpan(context)).isFalse());
     allInstrumentationTypes()
         .forEach(
             type ->
@@ -200,10 +197,11 @@ public class InstrumentationTypeTests {
                     .forEach(
                         type2 -> {
                           if (type1 == type2 && type1 != InstrumentationType.GENERIC) {
-                            assertThat(type1.clientContextKey()).isSameAs(type2.clientContextKey());
+                            assertThat(type1.clientSpanFromContext())
+                                .isSameAs(type2.clientSpanFromContext());
                           } else {
-                            assertThat(type1.clientContextKey())
-                                .isNotSameAs(type2.clientContextKey());
+                            assertThat(type1.clientSpanFromContext())
+                                .isNotSameAs(type2.clientSpanFromContext());
                           }
                         }));
   }
