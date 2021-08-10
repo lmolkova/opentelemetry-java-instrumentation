@@ -24,6 +24,10 @@ import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtrac
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesExtractor;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**

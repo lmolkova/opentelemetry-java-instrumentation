@@ -21,6 +21,7 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
+
 import io.opentelemetry.instrumentation.api.instrumenter.db.DbAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -141,6 +143,7 @@ class InstrumenterTest {
 
   @Test
   void server() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
@@ -152,6 +155,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
+
     assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, null);
@@ -195,6 +199,7 @@ class InstrumenterTest {
     SpanContext spanContext = Span.fromContext(context).getSpanContext();
 
     assertThat(spanContext.isValid()).isTrue();
+
     assertThat(SpanKey.SERVER.fromContextOrNull(context).getSpanContext()).isEqualTo(spanContext);
 
     instrumenter.end(context, REQUEST, RESPONSE, new IllegalStateException("test"));
@@ -209,10 +214,13 @@ class InstrumenterTest {
 
   @Test
   void server_parent() {
+    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
+
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
             .addAttributesExtractors(new AttributesExtractor1(), new AttributesExtractor2())
+            .enableInstrumentationTypeSuppression(true)
             .newServerInstrumenter(new MapGetter());
 
     Map<String, String> request = new HashMap<>(REQUEST);
@@ -787,7 +795,7 @@ class InstrumenterTest {
   }
 
   @Test
-  void clientNestedNotSuppressed_wehnDifferentInstrumentationCategories() {
+  void clientNestedNotSuppressed_whenDifferentInstrumentationCategories() {
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterOuter =
         getInstrumenterWithType(true, mockDbAttributes);
     Instrumenter<Map<String, String>, Map<String, String>> instrumenterInner =
@@ -883,25 +891,12 @@ class InstrumenterTest {
     Map<String, String> request = new HashMap<>(REQUEST);
 
     Context context = instrumenter.start(Context.root(), request);
+    validateInstrumentationTypeSpanPresent(SpanKey.DB, context);
     validateInstrumentationTypeSpanPresent(SpanKey.MESSAGING, context);
-  }
-
-  @Test
-  void instrumentationTypeDetected_generic() {
-    Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
-        getInstrumenterWithType(true, new AttributesExtractor2(), mockNetAttributes);
-
-    Map<String, String> request = new HashMap<>(REQUEST);
-
-    Context context = instrumenter.start(Context.root(), request);
-    Span span = Span.fromContext(context);
-
-    assertThat(span).isNotNull();
-
-    assertThat(SpanKey.HTTP.fromContextOrNull(context)).isNull();
-    assertThat(SpanKey.DB.fromContextOrNull(context)).isNull();
-    assertThat(SpanKey.RPC.fromContextOrNull(context)).isNull();
-    assertThat(SpanKey.MESSAGING.fromContextOrNull(context)).isNull();
+    Assertions.assertThat(SpanKey.HTTP.fromContextOrNull(context)).isNull();
+    Assertions.assertThat(SpanKey.RPC.fromContextOrNull(context)).isNull();
+    Assertions.assertThat(SpanKey.SERVER.fromContextOrNull(context)).isNull();
+    Assertions.assertThat(SpanKey.CONSUMER.fromContextOrNull(context)).isNull();
   }
 
   private static void validateInstrumentationTypeSpanPresent(SpanKey spanKey, Context context) {
