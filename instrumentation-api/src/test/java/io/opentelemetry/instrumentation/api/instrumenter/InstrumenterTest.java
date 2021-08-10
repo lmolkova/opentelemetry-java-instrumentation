@@ -143,7 +143,6 @@ class InstrumenterTest {
 
   @Test
   void server() {
-    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")
@@ -214,8 +213,6 @@ class InstrumenterTest {
 
   @Test
   void server_parent() {
-    InstrumentationType instrumentationType = InstrumentationType.getOrCreate("test");
-
     Instrumenter<Map<String, String>, Map<String, String>> instrumenter =
         Instrumenter.<Map<String, String>, Map<String, String>>newBuilder(
                 otelTesting.getOpenTelemetry(), "test", unused -> "span")

@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,12 +115,62 @@ public class SpanSuppressionStrategyTest {
         allClientSpanKeys().collect(Collectors.toList()));
 
     Context context = strategy.storeInContext(SpanKind.CLIENT, Context.root(), SPAN);
+
+    assertThat(strategy.shouldSuppress(SpanKind.CLIENT, context)).isTrue();
+    assertThat(strategy.shouldSuppress(SpanKind.PRODUCER, context)).isTrue();
+    assertThat(strategy.shouldSuppress(SpanKind.SERVER, context)).isFalse();
+    assertThat(strategy.shouldSuppress(SpanKind.CONSUMER, context)).isFalse();
+    
     allClientSpanKeys().forEach(key -> {
-      assertThat(strategy.shouldSuppress(SpanKind.CLIENT, context)).isTrue();
       assertThat(key.fromContextOrNull(context)).isSameAs(SPAN);
-      assertThat(strategy.shouldSuppress(SpanKind.PRODUCER, context)).isTrue();
-      assertThat(strategy.shouldSuppress(SpanKind.SERVER, context)).isFalse();
-      assertThat(strategy.shouldSuppress(SpanKind.CONSUMER, context)).isFalse();
+    });
+  }
+
+  @Test
+  public void noKeys_clientIsNeverSuppressed() {
+
+    SpanSuppressionStrategy strategy = SpanSuppressionStrategy.from(new ArrayList<>());
+
+    Context context = strategy.storeInContext(SpanKind.CLIENT, Context.root(), SPAN);
+    assertThat(context).isSameAs(Context.root());
+
+    assertThat(strategy.shouldSuppress(SpanKind.CLIENT, context)).isFalse();
+    assertThat(strategy.shouldSuppress(SpanKind.PRODUCER, context)).isFalse();
+    assertThat(strategy.shouldSuppress(SpanKind.SERVER, context)).isFalse();
+    assertThat(strategy.shouldSuppress(SpanKind.CONSUMER, context)).isFalse();
+
+    allClientSpanKeys().forEach(key -> {
+      assertThat(key.fromContextOrNull(context)).isNull();
+    });
+  }
+
+  @Test
+  public void noKeys_serverIsSuppressed() {
+
+    SpanSuppressionStrategy strategy = SpanSuppressionStrategy.from(new ArrayList<>());
+
+    Context context = strategy.storeInContext(SpanKind.SERVER, Context.root(), SPAN);
+
+    assertThat(strategy.shouldSuppress(SpanKind.SERVER, context)).isTrue();
+    assertThat(SpanKey.SERVER.fromContextOrNull(context)).isSameAs(SPAN);
+
+    allClientSpanKeys().forEach(key -> {
+      assertThat(key.fromContextOrNull(context)).isNull();
+    });
+  }
+
+  @Test
+  public void noKeys_consumerIsSuppressed() {
+
+    SpanSuppressionStrategy strategy = SpanSuppressionStrategy.from(new ArrayList<>());
+
+    Context context = strategy.storeInContext(SpanKind.CONSUMER, Context.root(), SPAN);
+
+    assertThat(strategy.shouldSuppress(SpanKind.CONSUMER, context)).isTrue();
+    assertThat(SpanKey.CONSUMER.fromContextOrNull(context)).isSameAs(SPAN);
+
+    allClientSpanKeys().forEach(key -> {
+      assertThat(key.fromContextOrNull(context)).isNull();
     });
   }
 

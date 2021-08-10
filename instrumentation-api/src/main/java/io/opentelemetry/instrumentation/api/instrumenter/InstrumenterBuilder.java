@@ -141,7 +141,7 @@ public final class InstrumenterBuilder<REQUEST, RESPONSE> {
 
   // visible for tests
   /**
-   * Enables {@link InstrumentationType} support and suppression.
+   * Enables suppression based on client instrumentation type.
    *
    * <p><strong>When enabled, suppresses nested spans depending on their {@link SpanKind} and
    * type</strong>.
