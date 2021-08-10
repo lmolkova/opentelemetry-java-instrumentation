@@ -12,7 +12,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 // TODO make class (and fields/methods below) package-private after tracers are gone and no need for
 //  bridging from ClientSpan/ServerSpan/ConsumerSpan
-public class SpanKey {
+public final class SpanKey {
 
   private static final ContextKey<Span> SERVER_KEY =
       ContextKey.named("opentelemetry-traces-span-key-server");
