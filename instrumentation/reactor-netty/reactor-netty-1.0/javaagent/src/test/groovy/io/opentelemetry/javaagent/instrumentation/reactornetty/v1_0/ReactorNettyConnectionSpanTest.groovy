@@ -5,6 +5,7 @@
 
 package io.opentelemetry.javaagent.instrumentation.reactornetty.v1_0
 
+import io.opentelemetry.extension.annotations.WithSpan
 import io.opentelemetry.instrumentation.test.AgentTestTrait
 import io.opentelemetry.instrumentation.test.InstrumentationSpecification
 import io.opentelemetry.instrumentation.test.utils.PortUtils
@@ -12,6 +13,8 @@ import io.opentelemetry.instrumentation.testing.junit.http.HttpClientTestServer
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes
 import reactor.netty.http.client.HttpClient
 import spock.lang.Shared
+
+import java.util.concurrent.Callable
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL
@@ -119,6 +122,30 @@ class ReactorNettyConnectionSpanTest extends InstrumentationSpecification implem
             "${SemanticAttributes.NET_PEER_PORT.key}" PortUtils.UNUSABLE_PORT
             "${SemanticAttributes.NET_PEER_IP.key}" { it == null || it == "127.0.0.1" }
           }
+        }
+      }
+    }
+  }
+
+  def "test successful nested under WithSpan"() {
+    when:
+    def responseCode = new Callable() {
+      @WithSpan("test")
+      @Override
+      Integer call() {
+        return 200
+      }
+    }.call()
+
+    then:
+    responseCode == 200
+
+    assertTraces(1) {
+      trace(0, 1) {
+        span(0) {
+          name "test"
+          kind INTERNAL
+          hasNoParent()
         }
       }
     }

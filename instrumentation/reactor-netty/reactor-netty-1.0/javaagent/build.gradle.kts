@@ -23,6 +23,9 @@ dependencies {
   testInstrumentation(project(":instrumentation:reactor-netty:reactor-netty-0.9:javaagent"))
   testInstrumentation(project(":instrumentation:netty:netty-4.1:javaagent"))
   testInstrumentation(project(":instrumentation:reactor-3.1:javaagent"))
+
+  testImplementation("io.opentelemetry:opentelemetry-extension-annotations")
+  testInstrumentation(project(":instrumentation:opentelemetry-annotations-1.0:javaagent"))
 }
 
 tasks {
