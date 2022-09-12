@@ -76,7 +76,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: jdk${{ matrix.test-java-version }}
           read-only: true
@@ -139,7 +139,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: smokeTests
           read-only: true
@@ -244,7 +244,7 @@ jobs:
           git cherry-pick ${{ github.event.inputs.commits }}
 
       - name: Build and publish artifacts
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: jdk11
           remote-build-cache-proxy-enabled: false

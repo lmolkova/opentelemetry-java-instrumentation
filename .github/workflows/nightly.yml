@@ -21,7 +21,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: jdk11
 
@@ -91,7 +91,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: jdk${{ matrix.test-java-version }}
           read-only: true
@@ -127,7 +127,7 @@ jobs:
         run: echo "testLatestDeps" > gradle/otel-gradle-dependencies-key
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: latestDepTest
           gradle-dependencies-cache-key: |
@@ -177,7 +177,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.12
         with:
           job-id: smokeTests
           read-only: true
