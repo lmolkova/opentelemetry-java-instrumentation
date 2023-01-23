@@ -21,7 +21,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.16
         with:
           job-id: jdk11
 
@@ -107,7 +107,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.16
         with:
           job-id: jdk${{ matrix.test-java-version }}
           read-only: true
@@ -179,7 +179,7 @@ jobs:
           java-version: 11
 
       - name: Restore cache
-        uses: burrunan/gradle-cache-action@v1.10
+        uses: burrunan/gradle-cache-action@v1.16
         with:
           job-id: smokeTests
           read-only: true
