@@ -57,4 +57,19 @@ class AzureSdkTest {
                         .hasStatus(StatusData.ok())
                         .hasAttributesSatisfying(Attributes::isEmpty)));
   }
+
+  @Test
+  void testSpanWithExplicitParent() {
+    Context parent = TracerProxy.start("hello", Context.NONE);
+    TracerProxy.end(200, null, parent);
+
+    testing.waitAndAssertTracesWithoutScopeVersionVerification(
+        trace ->
+            trace.hasSpansSatisfyingExactly(
+                span ->
+                    span.hasName("hello")
+                        .hasKind(SpanKind.INTERNAL)
+                        .hasStatus(StatusData.ok())
+                        .hasAttributesSatisfying(Attributes::isEmpty)));
+  }
 }
